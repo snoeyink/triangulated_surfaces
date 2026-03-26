@@ -10,17 +10,17 @@
     mid = push(empty, 64)
     high = push(empty, 128)
     pair = push(low, 128)
-    bitxor = getproperty(Base, Symbol("⊻"))
 
     @test 1 in low
     @test !(2 in low)
     @test 64 in mid
     @test 128 in high
-    @test length(BitSet128.add(low, 1)) == 1
+    @test length(push(low, 1)) == 1
 
     @test (low & high).bits == zero(UInt128)
     @test (low | high).bits == pair.bits
-    @test bitxor(pair, low).bits == high.bits
+    @test (pair ⊻ low).bits == high.bits 
+
 
     complement = ~low
     @test !(1 in complement)
@@ -36,7 +36,7 @@
     b = BitSet128(UInt128(0b1100))
     @test (a & b).bits == UInt128(0b1000)
     @test (a | b).bits == UInt128(0b1110)
-    @test bitxor(a, b).bits == UInt128(0b0110)
+    @test ⊻(a, b).bits == UInt128(0b0110) 
 
     @test_throws ArgumentError (0 in empty)
     @test_throws ArgumentError (129 in empty)
