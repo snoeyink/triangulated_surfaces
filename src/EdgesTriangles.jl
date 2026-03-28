@@ -20,12 +20,6 @@ end
     te_index(a::Int, b::Int, c::Int)
 """
 triangle_index(a::Int, b::Int, c::Int) = a + (b-1)*(b-2) ÷ 2 + (c-1)*(c-2)*(c-3) ÷ 6 # 1 based
-function t_index(a::Int, b::Int, c::Int)
-    mn = min(a,b,c)
-    mx = max(a,b,c)
-    md = a-mn+c-mx+b
-    return triangle_index(mn, md, mx)  # +1 for 1-based indexing
-end
 
 @inline function edge_index(a::Int, b::Int)
     @boundscheck (1 <= a < b <= 16) || throw(ArgumentError("edge endpoints must satisfy 1 <= a < b <= 16"))
