@@ -32,7 +32,7 @@ end
     return a + (b-1)*(b-2) ÷ 2 # 1 based
 end
 e_index(a::Int, b::Int) = @inbounds edge_index(minmax(a,b)...) # 1 based
-singleton(a::Int, b::Int) = @inbounds BitSet128.singleton(edge_index(a,b))
+singleton(a::Int, b::Int) = @inbounds singleton(edge_index(a,b))
 
 """
     precompute_conflicts(points::Vector{Point3D})

@@ -22,7 +22,7 @@ BitSet128() = BitSet128(zero(UInt128))
 end
 
 @propagate_inbounds Base.in(elem::Integer, s::BitSet128)     = !iszero(s & singleton(elem))
-@propagate_inbounds Base.push(s::BitSet128, elem::Integer)   = s | singleton(elem)
+@propagate_inbounds push(s::BitSet128, elem::Integer)   = s | singleton(elem)
 @propagate_inbounds Base.delete(s::BitSet128, elem::Integer) = s & ~singleton(elem)
 
 @inline Base.issubset(a::BitSet128, b::BitSet128)   = iszero(a & ~b)

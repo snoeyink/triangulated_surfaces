@@ -6,10 +6,11 @@
     @test iszero(empty)
     @test length(empty) == 0
 
-    low = push(empty, 1)
-    mid = push(empty, 64)
-    high = push(empty, 128)
+    low = singleton(1)
+    mid = singleton(64)
+    high = singleton(128)
     pair = push(low, 128)
+    @test (1 in pair) && (128 in pair) 
 
     @test 1 in low
     @test !(2 in low)
