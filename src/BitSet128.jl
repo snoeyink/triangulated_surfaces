@@ -1,5 +1,6 @@
 # BitSet128.jl
 # Compact bitset for elements 1..128 packed in a UInt128.
+using Base: @propagate_inbounds
 
 struct BitSet128
     bits::UInt128
