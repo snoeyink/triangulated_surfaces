@@ -6,6 +6,33 @@
 #
 # All hand-verified values are re-derived in comments.
 
+const BdryVE = TriangulatedSurfaces.BdryVE
+const BdryLoop = TriangulatedSurfaces.BdryLoop
+const UNUSED = TriangulatedSurfaces.UNUSED
+const ON_BOUNDARY = TriangulatedSurfaces.ON_BOUNDARY
+const INTERIOR = TriangulatedSurfaces.INTERIOR
+
+const triangle_index = TriangulatedSurfaces.triangle_index
+const t_index = TriangulatedSurfaces.t_index
+const nxt = TriangulatedSurfaces.nxt
+const opp = TriangulatedSurfaces.opp
+const tri = TriangulatedSurfaces.tri
+const nxt2 = TriangulatedSurfaces.nxt2
+const nxt3 = TriangulatedSurfaces.nxt3
+const unused = TriangulatedSurfaces.unused
+const on_boundary = TriangulatedSurfaces.on_boundary
+const interior = TriangulatedSurfaces.interior
+const ear0 = TriangulatedSurfaces.ear0
+const ear1 = TriangulatedSurfaces.ear1
+const link = TriangulatedSurfaces.link
+const removable = TriangulatedSurfaces.removable
+const first_tri = TriangulatedSurfaces.first_tri
+const is_last = TriangulatedSurfaces.is_last
+const init_loop! = TriangulatedSurfaces.init_loop!
+const add_ear! = TriangulatedSurfaces.add_ear!
+const add_link! = TriangulatedSurfaces.add_link!
+const popBE! = TriangulatedSurfaces.popBE!
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Helper: six-vertex boundary loop 1→3→6→4→7→5→1, interior vertex 2.
 # Pending triangles stored in each BdryVE.tri:

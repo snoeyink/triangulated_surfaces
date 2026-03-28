@@ -6,17 +6,17 @@
     @test iszero(empty)
     @test length(empty) == 0
 
-    low = singleton(1)
-    mid = singleton(64)
-    high = singleton(128)
-    pair = push(low, 128)
+    low = TriangulatedSurfaces.singleton(1)
+    mid = TriangulatedSurfaces.singleton(64)
+    high = TriangulatedSurfaces.singleton(128)
+    pair = TriangulatedSurfaces.push(low, 128)
     @test (1 in pair) && (128 in pair) 
 
     @test 1 in low
     @test !(2 in low)
     @test 64 in mid
     @test 128 in high
-    @test length(push(low, 1)) == 1
+    @test length(TriangulatedSurfaces.push(low, 1)) == 1
 
     @test (low & high).bits == zero(UInt128)
     @test (low | high).bits == pair.bits
@@ -41,8 +41,8 @@
 
     @test_throws ArgumentError (0 in empty)
     @test_throws ArgumentError (129 in empty)
-    @test_throws ArgumentError push(empty, 0)
-    @test_throws ArgumentError push(empty, 129)
-    @test_throws ArgumentError delete(empty, 0)
-    @test_throws ArgumentError delete(empty, 129)
+    @test_throws ArgumentError TriangulatedSurfaces.push(empty, 0)
+    @test_throws ArgumentError TriangulatedSurfaces.push(empty, 129)
+    @test_throws ArgumentError Base.delete(empty, 0)
+    @test_throws ArgumentError Base.delete(empty, 129)
 end
