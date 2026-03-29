@@ -11,6 +11,7 @@ include("BitSet128.jl")
 include("Points.jl")
 include("EdgesTriangles.jl")
 include("BdryLoop.jl")
+include("Backtrack.jl")
 
 
 # When we choose a max triangle to start with, we can immediately prune all triangles that conflict with it and all triangles with higher indices.

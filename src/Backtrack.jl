@@ -37,20 +37,16 @@ end
 
 # ── Conflict checks ───────────────────────────────────────────────────────────
 
-# ear (i, j=nxt(i), k): 2 new edges (j,k) and (i,k)
+# ear (i, j, k=nxt(i)): 2 new edges (i,j) and (j,k)
 @inline function ear_ok(b                ::BdryLoop,
                          tri_table        ::Array{Int16,3},
                          conflict_edgesets::Vector{BitSet128},
-                         i::Int, k::Int) :: Bool
+                         i::Int, j::Int) :: Bool
     @inbounds begin
-        j  = Int(b.v[i].next)
+        k  = Int(b.v[i].next)
         ti = Int(tri_table[i, j, k])
-        iszero(ti) && return false
-        ne = edge_bit(j, k) | edge_bit(i, k)
-        !iszero(ne & b.forbidden_edgeset) && return false
-        !iszero(conflict_edgesets[ti] & b.added_edgeset) && return false
+        return isdisjoint(conflict_edgesets[ti] & b.added_edgeset) && isdisjoint(tri_edgesets[ti] & b.forbidden_edgeset) 
     end
-    return true
 end
 
 # link (i, j=nxt(i), k=nxt2(i)): 1 new edge (i,k)
@@ -62,11 +58,8 @@ end
         j  = Int(b.v[i].next)
         k  = Int(b.v[j].next)
         ti = Int(tri_table[i, j, k])
-        iszero(ti) && return false
-        !iszero(edge_bit(i, k) & b.forbidden_edgeset) && return false
-        !iszero(conflict_edgesets[ti] & b.added_edgeset) && return false
+        return isdisjoint(conflict_edgesets[ti] & b.added_edgeset) && isdisjoint(tri_edgesets[ti] & b.forbidden_edgeset)
     end
-    return true
 end
 
 # ── Min-removable check ───────────────────────────────────────────────────────
