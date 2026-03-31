@@ -10,7 +10,7 @@
 struct SearchFrame
     added_edgeset    ::BitSet128   # b.added_edgeset before the move
     forbidden_edgeset::BitSet128   # b.forbidden_edgeset before the move
-    ve               ::BdryVE     # b.v[vertex_i] before the move
+    ve               ::BdryVE      # b.v[vertex_i] before the move
     n_unused         ::Int8        # b.n_unused before the move
     vertex_i         ::Int8        # boundary vertex modified (also serves as debug check)
     resume_i         ::Int8        # 0 = level exhausted; else: resume from this vertex
@@ -31,34 +31,28 @@ function BdryStack(; debug::Bool = true)
     )
 end
 
-# ── Edge helper ───────────────────────────────────────────────────────────────
-# BitSet128 with only the bit for edge (a,b) set; handles a>b via e_index
-@inline edge_bit(a::Int, b::Int) = singleton(e_index(a, b))
-
 # ── Conflict checks ───────────────────────────────────────────────────────────
 
 # ear (i, j, k=nxt(i)): 2 new edges (i,j) and (j,k)
 @inline function ear_ok(b                ::BdryLoop,
-                         tri_table        ::Array{Int16,3},
-                         conflict_edgesets::Vector{BitSet128},
+                         tri_table       ::Array{Int16,3},
+                         edgesets::Vector{Tri_Edgesets},
                          i::Int, j::Int) :: Bool
     @inbounds begin
-        k  = Int(b.v[i].next)
-        ti = Int(tri_table[i, j, k])
-        return isdisjoint(conflict_edgesets[ti] & b.added_edgeset) && isdisjoint(tri_edgesets[ti] & b.forbidden_edgeset) 
+        ti = tri_table[i, j, b.v[i].next]
+        return isdisjoint(edgesets[ti].conf & b.added_edgeset) && isdisjoint(edgesets[ti].has & b.forbidden_edgeset) 
     end
 end
 
 # link (i, j=nxt(i), k=nxt2(i)): 1 new edge (i,k)
 @inline function link_ok(b                ::BdryLoop,
-                          tri_table        ::Array{Int16,3},
-                          conflict_edgesets::Vector{BitSet128},
-                          i::Int) :: Bool
+                         tri_table        ::Array{Int16,3},
+                         edgesets::Vector{Tri_Edgesets},
+                         i::Int) :: Bool
     @inbounds begin
         j  = Int(b.v[i].next)
-        k  = Int(b.v[j].next)
-        ti = Int(tri_table[i, j, k])
-        return isdisjoint(conflict_edgesets[ti] & b.added_edgeset) && isdisjoint(tri_edgesets[ti] & b.forbidden_edgeset)
+        ti = tri_table[i, j, b.v[j].next]
+        return isdisjoint(edgesets[ti].conf & b.added_edgeset) && isdisjoint(edgesets[ti].has & b.forbidden_edgeset)
     end
 end
 
@@ -113,7 +107,7 @@ end
 function add_ear!(b                ::BdryLoop{D},
                   s                ::BdryStack{D},
                   tri_table        ::Array{Int16,3},
-                  conflict_edgesets::Vector{BitSet128},
+                  edgesets::Vector{Tri_Edgesets},
                   i::Int, k::Int,
                   resume_i::Int8, resume_k::Int8) where {D}
     D && @assert on_boundary(b, i) "add_ear!: i not on boundary"
@@ -138,8 +132,8 @@ function add_ear!(b                ::BdryLoop{D},
         b.n_unused -= 1
 
         # Edgesets: 2 new edges (j,k) and (i,k)
-        b.added_edgeset     |= edge_bit(j, k) | edge_bit(i, k)
-        b.forbidden_edgeset |= conflict_edgesets[Int(t)]
+        b.added_edgeset     |= edgesets[t].has
+        b.forbidden_edgeset |= edgesets[t].conf
     end
     return b
 end
@@ -150,7 +144,7 @@ end
 function add_link!(b                ::BdryLoop{D},
                    s                ::BdryStack{D},
                    tri_table        ::Array{Int16,3},
-                   conflict_edgesets::Vector{BitSet128},
+                   edgesets::Vector{Tri_Edgesets},
                    i::Int,
                    resume_i::Int8, resume_k::Int8) where {D}
     D && @assert on_boundary(b, i)          "add_link!: i not on boundary"
@@ -177,8 +171,8 @@ function add_link!(b                ::BdryLoop{D},
         if j == b.head; b.head = k; end
 
         # Edgesets: 1 new edge (i,k)
-        b.added_edgeset     |= edge_bit(i, k)
-        b.forbidden_edgeset |= conflict_edgesets[Int(t)]
+        b.added_edgeset     |= edgesets[t].has
+        b.forbidden_edgeset |= edgesets[t].conf
     end
     return b
 end
@@ -213,29 +207,6 @@ function popBE!(b::BdryLoop{D}, s::BdryStack{D}, i::Int) where {D}
     return b
 end
 
-# ── Tri-table builder ─────────────────────────────────────────────────────────
-# Fills tri_table[a,b,c] (all 6 permutations) with the renumbered index for
-# triangles ≤ tmax that have no conflict with the initial edgesets.
-# Zeros all other entries.  Called once per tmax in the outer search loop.
-function build_tri_table!(tri_table        ::Array{Int16,3},
-                           triangle_map     ::Vector{NTuple{3,Int}},
-                           edgeset          ::Vector{BitSet128},
-                           tmax             ::Int,
-                           init_added       ::BitSet128,
-                           init_forbidden   ::BitSet128)
-    fill!(tri_table, Int16(0))
-    @inbounds for t in 1:tmax
-        a, b, c = triangle_map[t]
-        # Triangle's conflict set must not intersect already-added edges
-        iszero(edgeset[t] & init_added) || continue
-        # Triangle's own edges must not be forbidden
-        !iszero((edge_bit(a,b) | edge_bit(b,c) | edge_bit(a,c)) & init_forbidden) && continue
-        idx = Int16(t)
-        tri_table[a,b,c]=idx; tri_table[a,c,b]=idx
-        tri_table[b,a,c]=idx; tri_table[b,c,a]=idx
-        tri_table[c,a,b]=idx; tri_table[c,b,a]=idx
-    end
-end
 
 # ── Backtracking skeleton ─────────────────────────────────────────────────────
 # Advance loop (per level):
@@ -257,7 +228,7 @@ end
 function backtrack!(b  ::BdryLoop{D},
                     s  ::BdryStack{D},
                     T  ::Array{Int16,3},
-                    E  ::Vector{BitSet128},
+                    es ::Vector{Tri_Edgesets},
                     out::IO) where {D}
     error("backtrack!: not yet implemented")
 end
