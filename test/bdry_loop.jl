@@ -78,7 +78,7 @@ end
     @test b.n_unused == 5              # n - 3 = 8 - 3
     @test iszero(b.added_edgeset)      # test version: edgesets left empty
     @test iszero(b.forbidden_edgeset)
-
+    
     # Single triangle: every vertex is ear0 ∧ ear1 ∧ ¬link ∧ removable
     for i in 1:3
         @test ear0(b,i) && ear1(b,i) && !link(b,i) && removable(b,i)
