@@ -76,3 +76,45 @@ function precompute_conflicts(points::Vector{Point3D})
     debugprint && println(conflictcount[tri_indices])
     return triangle_map[tri_indices], edgesets[tri_indices] 
 end
+
+
+# ── Tri-table builder ─────────────────────────────────────────────────────────
+# Given a tmax triangle index, compacts triangle_map and edgesets 
+# to include only triangles that are compatible with tmax's edgesets, 
+# and builds tri_table for the remaining triangles.
+# Since no triangle conflicting with tmax remains, 
+# I can set esets[tmax].conflicts = esets[tmax].has so it conflicts with added_edgeset and serves as sentinel. 
+# Fills tri_table[a,b,c] (all 6 permutations) with the renumbered index for
+# triangles ≤ tmax that are compatible with esets[tmax].
+# Compaction helps tmap & esets fit into L1 cache. 
+
+function build_tri_table(n::Int,       # number of points 
+                         tmax ::Int,   # max triangle is first used in surface
+                         triangle_map     ::Vector{NTuple{3,Int}},
+                         edgesets         ::Vector{Tri_Edgesets})
+    @inbounds begin
+        has_tmax = edgesets[tmax].has
+        conf_tmax = edgesets[tmax].conf
+        keep = [
+            isdisjoint(edgesets[t].conf, has_tmax) &&
+            isdisjoint(edgesets[t].has, conf_tmax)
+            for t in 1:tmax
+        ]
+        tmap = triangle_map[keep]
+        esets = edgesets[keep]
+        tmax = length(esets)
+        esets[tmax] = Tri_Edgesets(has_tmax, has_tmax) # make tmax conflict with itself so it won't be used again
+    end
+
+    tri_table = Array{Int16,3}(undef, n, n, n)
+    fill!(tri_table, Int16(tmax)) # tmax is sentinel, too, because it conflictsts own edgeset
+    @inbounds for t in 1:tmax
+        a, b, c = tmap[t]
+        idx = Int16(t)
+        tri_table[a,b,c]=idx; tri_table[a,c,b]=idx
+        tri_table[b,a,c]=idx; tri_table[b,c,a]=idx
+        tri_table[c,a,b]=idx; tri_table[c,b,a]=idx
+    end
+
+    return tmax, tmap, esets, tri_table
+end

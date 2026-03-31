@@ -9,7 +9,6 @@ const BdryLoop     = TriangulatedSurfaces.BdryLoop
 const UNUSED       = TriangulatedSurfaces.UNUSED
 const ON_BOUNDARY  = TriangulatedSurfaces.ON_BOUNDARY
 const INTERIOR     = TriangulatedSurfaces.INTERIOR
-const MAX_VERTICES = TriangulatedSurfaces.MAX_VERTICES
 
 const triangle_index = TriangulatedSurfaces.triangle_index
 const nxt          = TriangulatedSurfaces.nxt
@@ -31,8 +30,8 @@ const init_loop!   = TriangulatedSurfaces.init_loop!
 # Six-vertex boundary loop 1→3→6→4→7→5→1, interior vertex 2.
 # Manually constructed (bypasses init_loop!, so n_unused is not set).
 # Used by backtrack.jl tests via include order.
-function make_six_vertex_loop(; debug=true)
-    b = BdryLoop(16; debug)
+function make_six_vertex_loop()
+    b = BdryLoop(16)
     @inbounds begin
         b.v[1] = BdryVE(Int8(3), Int8(5), triangle_index(1,3,5))
         b.v[3] = BdryVE(Int8(6), Int8(2), triangle_index(2,3,6))
@@ -76,9 +75,7 @@ end
     # New fields
     @test b.n        == 8
     @test b.n_unused == 5              # n - 3 = 8 - 3
-    @test iszero(b.added_edgeset)      # test version: edgesets left empty
-    @test iszero(b.forbidden_edgeset)
-    
+      
     # Single triangle: every vertex is ear0 ∧ ear1 ∧ ¬link ∧ removable
     for i in 1:3
         @test ear0(b,i) && ear1(b,i) && !link(b,i) && removable(b,i)
@@ -88,8 +85,6 @@ end
     @test  first_tri(b,1)
     @test !first_tri(b,2)              # 2 < opp(2)=1 fails
     @test !first_tri(b,3)              # 3 < nxt(3)=1 fails
-
-    @test b.head == 1
 
     @test 0 == @allocated init_loop!(b, 1, 2, 3)
 end

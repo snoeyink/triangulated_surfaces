@@ -21,38 +21,6 @@ include("Backtrack.jl")
 # Note that we can search different max triangles in parallel. 
 
 
-# ── Tri-table builder ─────────────────────────────────────────────────────────
-# Fills tri_table[a,b,c] (all 6 permutations) with the renumbered index for
-# triangles ≤ tmax that are compatible with edgesets[tmax].
-# Compacts triangle_map/edgesets and returns the new tmax.
-function build_tri_table(n::Int,       # number of points 
-                         tmax ::Int,   # max triangle is first used in surface
-                         triangle_map     ::Vector{NTuple{3,Int}},
-                         edgesets         ::Vector{Tri_Edgesets})
-    @inbounds begin
-        has_tmax = edgesets[tmax].has
-        conf_tmax = edgesets[tmax].conf
-        keep = [
-            isdisjoint(edgesets[t].conf, has_tmax) &&
-            isdisjoint(edgesets[t].has, conf_tmax)
-            for t in 1:tmax
-        ]
-        tmap = triangle_map[keep]
-        esets = edgesets[keep]
-        tmax = length(esets)
-    end
-
-    tri_table = Array{Int16,3}(undef, n, n, n)
-    @inbounds for t in 1:tmax
-        a, b, c = tmap[t]
-        idx = Int16(t)
-        tri_table[a,b,c]=idx; tri_table[a,c,b]=idx
-        tri_table[b,a,c]=idx; tri_table[b,c,a]=idx
-        tri_table[c,a,b]=idx; tri_table[c,b,a]=idx
-    end
-
-    return tmax, tmap, esets, tri_table
-end
 
 # --- Triangulated Surface Enumeration via Backtracking ---
 

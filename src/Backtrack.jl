@@ -104,7 +104,7 @@ end
 # ── add_ear! ──────────────────────────────────────────────────────────────────
 # Prereqs: on_boundary(b,i), unused(b,k); ear_ok() checked by caller.
 # Pushes SearchFrame; resume_i/resume_k encode the next sibling at THIS level.
-function add_ear!(b                ::BdryLoop{D},
+function add_ear!(b                ::BdryLoop,
                   s                ::BdryStack{D},
                   tri_table        ::Array{Int16,3},
                   edgesets::Vector{Tri_Edgesets},
@@ -141,7 +141,7 @@ end
 # ── add_link! ─────────────────────────────────────────────────────────────────
 # Prereqs: on_boundary(b,i), on_boundary(nxt(b,i)); link_ok() checked by caller.
 # v[j] preserved untouched (needed for undo). b.head updated if j was head.
-function add_link!(b                ::BdryLoop{D},
+function add_link!(b                ::BdryLoop,
                    s                ::BdryStack{D},
                    tri_table        ::Array{Int16,3},
                    edgesets::Vector{Tri_Edgesets},
@@ -180,7 +180,7 @@ end
 # ── popBE! ────────────────────────────────────────────────────────────────────
 # Undo the last pushed move for vertex i.
 # Restores topology, edgesets, n_unused, head from the frame.
-function popBE!(b::BdryLoop{D}, s::BdryStack{D}, i::Int) where {D}
+function popBE!(b::BdryLoop, s::BdryStack{D}, i::Int) where {D}
     D && @assert s.sp > 0      "popBE!: stack empty"
     D && @assert !ear1(b, i)   "popBE!: precondition !ear1 failed"
     @inbounds begin
@@ -225,7 +225,7 @@ end
 # Backtrack: no advance → pop frame → restore → jump to (frame.resume_i, frame.resume_k)
 #
 # TODO: implement after data structure tests pass
-function backtrack!(b  ::BdryLoop{D},
+function backtrack!(b  ::BdryLoop,
                     s  ::BdryStack{D},
                     T  ::Array{Int16,3},
                     es ::Vector{Tri_Edgesets},

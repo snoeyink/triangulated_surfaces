@@ -25,7 +25,7 @@ const INTERIOR    = Int8(2)
 # ── BdryLoop ──────────────────────────────────────────────────────────────────
 # D=true  → debug assertions active
 # D=false → assertions compiled away entirely
-mutable struct BdryLoop{D}
+mutable struct BdryLoop
     v                ::Vector{BdryVE}  # half-edge data, lenght n
     status           ::Vector{Int8}    # UNUSED / ON_BOUNDARY / INTERIOR
     head             ::Int             # any vertex currently on the boundary
@@ -35,8 +35,8 @@ mutable struct BdryLoop{D}
     forbidden_edgeset::BitSet128       # edges conflicting with any added triangle
 end
 
-function BdryLoop(n::Int; debug::Bool = true)
-    BdryLoop{debug}(
+function BdryLoop(n::Int)
+    BdryLoop(
         Vector{BdryVE}(undef, n),
         fill(UNUSED, n),
         0, n, n,
@@ -74,8 +74,8 @@ end
 # ── init_loop! (test version) ─────────────────────────────────────────────────
 # Uses triangle_index directly; leaves edgesets zeroed.
 # Call this form from tests and anywhere renumbering is not needed.
-function init_loop!(b::BdryLoop{D}, i::Int, j::Int, k::Int) where {D}
-    D && @assert i < j < k "init_loop!: need i < j < k"
+function init_loop!(b::BdryLoop, i::Int, j::Int, k::Int)
+    @assert i < j < k "init_loop!: need i < j < k"
     t = triangle_index(i, j, k)
     @inbounds begin
         fill!(b.status, UNUSED)
@@ -96,11 +96,10 @@ end
 # ── init_loop! (search version) ───────────────────────────────────────────────
 # Takes a renumbered triangle index t and precomputed edgesets from the main
 # search loop. Use this form inside backtrack!.
-function init_loop!(b       ::BdryLoop{D},
+function init_loop!(b       ::BdryLoop,
                     t       ::Int16,
                     tmap    ::Vector{NTuple{3,Int}},
-                    edgesets::Vector{Tri_Edgesets}) where {D}
-    D && @assert i < j < k "init_loop!: need i < j < k"
+                    edgesets::Vector{Tri_Edgesets})
     @inbounds begin
         fill!(b.status, UNUSED)
         i,j,k = tmap[t]

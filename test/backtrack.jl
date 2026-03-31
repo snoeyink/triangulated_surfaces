@@ -22,11 +22,7 @@ const Tri_Edgesets     = TriangulatedSurfaces.Tri_Edgesets
 # Tri-table using original triangle_index ordering (no renumbering).
 # All 6 permutations of each valid triple are filled; degenerate entries stay 0.
 
-const tmax, TEST_tmap, TEST_ESETS, TEST_TRI   = build_tri_table(5, triangle_index(3,4,5), 
-    [ (1,2,3), (1,2,4), (1,3,4), (2,3,4), (1,2,5), (1,3,5),  (2,3,5), (1,4,5), (2,4,5), (3,4,5) ],
-     fill(Tri_Edgesets(BitSet128(), BitSet128()), 10)
-)
-# All-zero conflict edgesets → no geometry conflicts; tests topology only.
+
 
 @testset "Backtrack" begin
 
@@ -39,10 +35,17 @@ end
 # ─── add_ear!(b, s, 3, 4) ────────────────────────────────────────────────────
 # j = nxt(3) = 1, k = 4; triangle (1,3,4); boundary becomes 1→2→3→4→1.
 @testset "add_ear!(b, s, 3, 4)" begin
+    points = tetrahedron_with_origin(scale=4)
+    push!(points, Point3D(2, 1, 0))
+    tm,es = precompute_conflicts(points)
+    tmax = length(es)
+    tmax, tmap, esets, tri_table = build_tri_table(6, tmax, tm, es)  # test tri_table and edgesets for add_ear!/add_link!
+    @test tmax == tri_table[3, 4, 6]
+    
     b = BdryLoop(8); s = BdryStack()
-    init_loop!(b, 1, 2, 3)
+    init_loop!(b, tmax, tmap, esets)
     add_ear!(b, s, TEST_TRI, TEST_ESETS, 3, 4, Int8(0), Int8(0))
-    t = triangle_index(1, 3, 4)
+    
 
     @test nxt(b,3)==4  && opp(b,3)==1  && tri(b,3)==t
     @test nxt(b,4)==1  && opp(b,4)==3  && tri(b,4)==t
