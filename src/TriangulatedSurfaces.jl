@@ -33,8 +33,8 @@ function build_tri_table(n::Int,       # number of points
         has_tmax = edgesets[tmax].has
         conf_tmax = edgesets[tmax].conf
         keep = [
-            isdisjoint(edgesets[t].conf & has_tmax) &&
-            isdisjoint(edgesets[t].has & conf_tmax)
+            isdisjoint(edgesets[t].conf, has_tmax) &&
+            isdisjoint(edgesets[t].has, conf_tmax)
             for t in 1:tmax
         ]
         tmap = triangle_map[keep]

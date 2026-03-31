@@ -71,7 +71,7 @@ end
 
     # Status
     @test on_boundary(b,1) && on_boundary(b,2) && on_boundary(b,3)
-    @test all(unused(b,i) for i in 4:MAX_VERTICES)
+    @test all(unused(b,i) for i in 4:b.n)
 
     # New fields
     @test b.n        == 8

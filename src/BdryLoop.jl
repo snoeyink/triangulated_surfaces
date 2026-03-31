@@ -26,7 +26,7 @@ const INTERIOR    = Int8(2)
 # D=true  → debug assertions active
 # D=false → assertions compiled away entirely
 mutable struct BdryLoop{D}
-    v                ::Vector{BdryVE}  # half-edge data, length MAX_VERTICES
+    v                ::Vector{BdryVE}  # half-edge data, lenght n
     status           ::Vector{Int8}    # UNUSED / ON_BOUNDARY / INTERIOR
     head             ::Int             # any vertex currently on the boundary
     n                ::Int             # total vertices (fixed for this search)
@@ -37,8 +37,8 @@ end
 
 function BdryLoop(n::Int; debug::Bool = true)
     BdryLoop{debug}(
-        Vector{BdryVE}(undef, MAX_VERTICES),
-        fill(UNUSED, MAX_VERTICES),
+        Vector{BdryVE}(undef, n),
+        fill(UNUSED, n),
         0, n, n,
         BitSet128(), BitSet128(),
     )
@@ -65,7 +65,7 @@ end
 # Not removable iff link(i) AND opp(i) is already on the boundary.
 @inline removable(b::BdryLoop, i::Int) = !link(b, i) || !on_boundary(b, opp(b, i))
 
-# first_tri: true for exactly one vertex when the boundary bounds a single triangle.
+# first_tri: true for exactly one vertex when the boundary is a single triangle.
 @inline function first_tri(b::BdryLoop, i::Int)
     j = nxt(b, i); k = nxt(b, j)
     ear0(b, i) && ear1(b, i) && i < j && i < opp(b, i)
@@ -88,8 +88,8 @@ function init_loop!(b::BdryLoop{D}, i::Int, j::Int, k::Int) where {D}
     end
     b.head              = i
     b.n_unused          = b.n - 3
-    b.added_edgeset     = BitSet128()
-    b.forbidden_edgeset = BitSet128()
+    b.added_edgeset     = BitSet128()          # test version: edgesets left empty
+    b.forbidden_edgeset = BitSet128()          # test version: edgesets left empty
     return b
 end
 
@@ -97,13 +97,13 @@ end
 # Takes a renumbered triangle index t and precomputed edgesets from the main
 # search loop. Use this form inside backtrack!.
 function init_loop!(b       ::BdryLoop{D},
-                    i       ::Int, j::Int, k::Int,
                     t       ::Int16,
-                    init_added    ::BitSet128,
-                    init_forbidden::BitSet128) where {D}
+                    tmap    ::Vector{NTuple{3,Int}},
+                    edgesets::Vector{Tri_Edgesets}) where {D}
     D && @assert i < j < k "init_loop!: need i < j < k"
     @inbounds begin
         fill!(b.status, UNUSED)
+        i,j,k = tmap[t]
         b.v[i] = BdryVE(Int8(j), Int8(k), t)
         b.v[j] = BdryVE(Int8(k), Int8(i), t)
         b.v[k] = BdryVE(Int8(i), Int8(j), t)
@@ -113,7 +113,7 @@ function init_loop!(b       ::BdryLoop{D},
     end
     b.head              = i
     b.n_unused          = b.n - 3
-    b.added_edgeset     = init_added
-    b.forbidden_edgeset = init_forbidden
+    b.added_edgeset     = edgesets[t].has
+    b.forbidden_edgeset = edgesets[t].conf
     return b
 end

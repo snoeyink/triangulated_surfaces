@@ -2,11 +2,12 @@
 # Tests for Backtrack.jl.
 # Requires bdry_loop.jl to be included first in runtests.jl:
 #   provides BdryVE, BdryLoop, UNUSED, ON_BOUNDARY, INTERIOR, MAX_VERTICES,
-#   triangle_index, t_index, nxt/opp/tri/nxt2/nxt3, status predicates,
+#   triangle_index, triangle_index, nxt/opp/tri/nxt2/nxt3, status predicates,
 #   ear0/ear1/link/removable/first_tri, init_loop!, and make_six_vertex_loop.
 
 const BitSet128        = TriangulatedSurfaces.BitSet128
 const BdryStack        = TriangulatedSurfaces.BdryStack
+const triangle_index   = TriangulatedSurfaces.triangle_index
 const SearchFrame      = TriangulatedSurfaces.SearchFrame
 const add_ear!         = TriangulatedSurfaces.add_ear!
 const add_link!        = TriangulatedSurfaces.add_link!
@@ -14,24 +15,18 @@ const popBE!           = TriangulatedSurfaces.popBE!
 const ear_ok           = TriangulatedSurfaces.ear_ok
 const link_ok          = TriangulatedSurfaces.link_ok
 const is_min_removable = TriangulatedSurfaces.is_min_removable
-const edge_bit         = TriangulatedSurfaces.edge_bit
+const build_tri_table = TriangulatedSurfaces.build_tri_table
+const Tri_Edgesets     = TriangulatedSurfaces.Tri_Edgesets
 
 # ── Test fixtures ─────────────────────────────────────────────────────────────
-# Tri-table using original t_index ordering (no renumbering).
+# Tri-table using original triangle_index ordering (no renumbering).
 # All 6 permutations of each valid triple are filled; degenerate entries stay 0.
-function _make_test_tri_table()
-    T = zeros(Int16, MAX_VERTICES, MAX_VERTICES, MAX_VERTICES)
-    for a in 1:MAX_VERTICES, b in 1:MAX_VERTICES, c in 1:MAX_VERTICES
-        if a != b && b != c && a != c
-            @inbounds T[a,b,c] = Int16(t_index(a, b, c))
-        end
-    end
-    return T
-end
 
-const TEST_TRI   = _make_test_tri_table()
+const tmax, TEST_tmap, TEST_ESETS, TEST_TRI   = build_tri_table(5, triangle_index(3,4,5), 
+    [ (1,2,3), (1,2,4), (1,3,4), (2,3,4), (1,2,5), (1,3,5),  (2,3,5), (1,4,5), (2,4,5), (3,4,5) ],
+     fill(Tri_Edgesets(BitSet128(), BitSet128()), 10)
+)
 # All-zero conflict edgesets → no geometry conflicts; tests topology only.
-const TEST_ESETS = fill(BitSet128(), Int(triangle_index(14, 15, 16)))
 
 @testset "Backtrack" begin
 
@@ -47,7 +42,7 @@ end
     b = BdryLoop(8); s = BdryStack()
     init_loop!(b, 1, 2, 3)
     add_ear!(b, s, TEST_TRI, TEST_ESETS, 3, 4, Int8(0), Int8(0))
-    t = t_index(1, 3, 4)
+    t = triangle_index(1, 3, 4)
 
     @test nxt(b,3)==4  && opp(b,3)==1  && tri(b,3)==t
     @test nxt(b,4)==1  && opp(b,4)==3  && tri(b,4)==t
@@ -100,7 +95,7 @@ end
     init_loop!(b, 1, 2, 3)
     add_ear!(b, s, TEST_TRI, TEST_ESETS, 3, 4, Int8(0), Int8(0))
     add_ear!(b, s, TEST_TRI, TEST_ESETS, 4, 5, Int8(0), Int8(0))
-    t = t_index(1, 4, 5)
+    t = triangle_index(1, 4, 5)
 
     @test nxt(b,4)==5  && opp(b,4)==1  && tri(b,4)==t
     @test nxt(b,5)==1  && opp(b,5)==4  && tri(b,5)==t
@@ -120,7 +115,7 @@ end
 @testset "add_link!(b, s, 3)" begin
     b = make_six_vertex_loop(); s = BdryStack()
     add_link!(b, s, TEST_TRI, TEST_ESETS, 3, Int8(0), Int8(0))
-    t = t_index(3, 4, 6)              # = triangle_index(3,4,6) = 16
+    t = triangle_index(3, 4, 6)              # = triangle_index(3,4,6) = 16
 
     @test nxt(b,3)==4  && opp(b,3)==6  && tri(b,3)==t
     @test interior(b,6) && s.sp==1
@@ -145,7 +140,7 @@ end
     popBE!(b, s, 3)
 
     @test nxt(b,3)==6  && opp(b,3)==2
-    @test tri(b,3) == t_index(2, 3, 6)    # = triangle_index(2,3,6) = 13
+    @test tri(b,3) == triangle_index(2, 3, 6)    # = triangle_index(2,3,6) = 13
     @test on_boundary(b,6) && s.sp==0
 
     @test link(b,3) && removable(b,3)     # vertex 2 still interior
@@ -162,11 +157,11 @@ end
 @testset "head update when add_link! buries head" begin
     b = BdryLoop(16); s = BdryStack()
     @inbounds begin
-        b.v[3] = BdryVE(Int8(6), Int8(5), t_index(3,5,6))
-        b.v[6] = BdryVE(Int8(4), Int8(7), t_index(4,6,7))
-        b.v[4] = BdryVE(Int8(7), Int8(6), t_index(4,6,7))
-        b.v[7] = BdryVE(Int8(5), Int8(6), t_index(5,6,7))
-        b.v[5] = BdryVE(Int8(3), Int8(4), t_index(3,4,5))
+        b.v[3] = BdryVE(Int8(6), Int8(5), triangle_index(3,5,6))
+        b.v[6] = BdryVE(Int8(4), Int8(7), triangle_index(4,6,7))
+        b.v[4] = BdryVE(Int8(7), Int8(6), triangle_index(4,6,7))
+        b.v[7] = BdryVE(Int8(5), Int8(6), triangle_index(5,6,7))
+        b.v[5] = BdryVE(Int8(3), Int8(4), triangle_index(3,4,5))
         for i in (3,4,5,6,7); b.status[i] = ON_BOUNDARY; end
     end
     b.head = 3; b.n_unused = 11
@@ -196,7 +191,7 @@ end
     # ear_ok(b2, ..., 3, 4): new edges are (j=1,k=4) and (i=3,k=4); (1,4) forbidden → false
     # ear_ok(b2, ..., 1, 4): new edges are (j=2,k=4) and (i=1,k=4); (1,4) forbidden → false
     b2 = BdryLoop(8); init_loop!(b2, 1, 2, 3)
-    b2.forbidden_edgeset = edge_bit(1, 4)
+    b2.forbidden_edgeset = TriangulatedSurfaces.singleton(TriangulatedSurfaces.e_index(1, 4))
     @test !ear_ok(b2, TEST_TRI, TEST_ESETS, 3, 4)
     @test !ear_ok(b2, TEST_TRI, TEST_ESETS, 1, 4)
 
@@ -204,7 +199,7 @@ end
     b3 = make_six_vertex_loop()
     @test  link_ok(b3, TEST_TRI, TEST_ESETS, 3)   # edge(3,4) not forbidden
 
-    b3.forbidden_edgeset = edge_bit(3, 4)
+    b3.forbidden_edgeset = TriangulatedSurfaces.singleton(TriangulatedSurfaces.e_index(3, 4))
     @test !link_ok(b3, TEST_TRI, TEST_ESETS, 3)   # edge(3,4) now forbidden
 end
 
@@ -218,7 +213,7 @@ end
     @test is_min_removable(b, 1)
     @test is_min_removable(b, 2)
 
-    # After add_ear!(3,4): tri(3) = t_index(1,3,4) = 3
+    # After add_ear!(3,4): tri(3) = triangle_index(1,3,4) = 3
     # Vertex 1 and 2 are still removable with tri = 2 < 3
     # → is_min_removable(b, 3) = false
     add_ear!(b, s, TEST_TRI, TEST_ESETS, 3, 4, Int8(0), Int8(0))

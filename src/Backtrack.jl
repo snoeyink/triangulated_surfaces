@@ -40,7 +40,7 @@ end
                          i::Int, j::Int) :: Bool
     @inbounds begin
         ti = tri_table[i, j, b.v[i].next]
-        return isdisjoint(edgesets[ti].conf & b.added_edgeset) && isdisjoint(edgesets[ti].has & b.forbidden_edgeset) 
+        return isdisjoint(edgesets[ti].conf, b.added_edgeset) && isdisjoint(edgesets[ti].has, b.forbidden_edgeset)
     end
 end
 
@@ -52,7 +52,7 @@ end
     @inbounds begin
         j  = Int(b.v[i].next)
         ti = tri_table[i, j, b.v[j].next]
-        return isdisjoint(edgesets[ti].conf & b.added_edgeset) && isdisjoint(edgesets[ti].has & b.forbidden_edgeset)
+        return isdisjoint(edgesets[ti].conf, b.added_edgeset) && isdisjoint(edgesets[ti].has, b.forbidden_edgeset)
     end
 end
 

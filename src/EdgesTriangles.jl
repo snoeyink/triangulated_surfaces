@@ -73,6 +73,6 @@ function precompute_conflicts(points::Vector{Point3D})
     end # for tri
 
     tri_indices = sortperm(1:max_tri_idx, by=i->conflictcount[i])
-    D && @assert !debugprint || (println(conflictcount[tri_indices]); true)
+    debugprint && println(conflictcount[tri_indices])
     return triangle_map[tri_indices], edgesets[tri_indices] 
 end
