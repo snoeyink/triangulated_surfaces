@@ -1,3 +1,5 @@
+TriIJK = NTuple{3,Int8}
+
 
 """
     conflict(edge, tri, points)
@@ -5,7 +7,7 @@
 Return `true` when edge `(a,b)` intersects triangle `(c,d,e)` anywhere other than
 sharing vertices. Uses an integer-only segment–triangle intersection test.
 """
-function conflict(edge::Tuple{Int,Int}, tri::NTuple{3,Int}, points::Vector{Point3D})
+function conflict(edge::Tuple{Integer,Integer}, tri::TriIJK, points::Vector{Point3D})
     a, b = edge
     c, d, e = tri
     if a in tri || b in tri
@@ -23,16 +25,16 @@ struct Tri_Edgesets
 end
 
 """
-    triangle_index(a::Int, b::Int, c::Int)
+    triangle_index(a::Integer, b::Integer, c::Integer)
 """
-triangle_index(a::Int, b::Int, c::Int) = a + (b-1)*(b-2) ÷ 2 + (c-1)*(c-2)*(c-3) ÷ 6 # 1 based
+triangle_index(a::Integer, b::Integer, c::Integer) = a + (b-1)*(b-2) ÷ 2 + (c-1)*(c-2)*(c-3) ÷ 6 # 1 based
 
-@inline function edge_index(a::Int, b::Int)
+@inline function edge_index(a::Integer, b::Integer)
     @boundscheck (1 <= a < b <= 16) || throw(ArgumentError("edge endpoints must satisfy 1 <= a < b <= 16"))
     return a + (b-1)*(b-2) ÷ 2 # 1 based
 end
-e_index(a::Int, b::Int) = @inbounds edge_index(minmax(a,b)...) 
-singleton(a::Int, b::Int) = @inbounds singleton(e_index(a,b))
+e_index(a::Integer, b::Integer) = @inbounds edge_index(minmax(a,b)...) 
+singleton(a::Integer, b::Integer) = @inbounds singleton(e_index(a,b))
 
 """
     precompute_conflicts(points::Vector{Point3D})
@@ -48,7 +50,7 @@ function precompute_conflicts(points::Vector{Point3D})
     max_tri_idx = triangle_index(n - 2, n - 1, n)
     
     # Create reverse map: index -> triangle
-    triangle_map = Vector{NTuple{3,Int}}(undef, max_tri_idx)
+    triangle_map = Vector{TriIJK}(undef, max_tri_idx)
     for c in 1:(n-2), d in (c+1):(n-1), e in (d+1):n
         t = triangle_index(c, d, e)
         triangle_map[t] = (c, d, e)
@@ -61,6 +63,7 @@ function precompute_conflicts(points::Vector{Point3D})
         conf_edgeset = BitSet128()
         for a in 1:(n-1), b in (a+1):n 
             if conflict((a, b), triangle_map[t], points)
+                #println((a,b), triangle_map[t])
                 conflictcount[t] += 1
                 conf_edgeset |= singleton(a,b)
                 for c in 1:a-1 conflictcount[triangle_index(c, a, b)] += 1; end
@@ -82,15 +85,14 @@ end
 # Given a tmax triangle index, compacts triangle_map and edgesets 
 # to include only triangles that are compatible with tmax's edgesets, 
 # and builds tri_table for the remaining triangles.
-# Since no triangle conflicting with tmax remains, 
-# I can set esets[tmax].conflicts = esets[tmax].has so it conflicts with added_edgeset and serves as sentinel. 
+# Adds sentinel triangle at tmax+1 that conflicts with tmax edges
 # Fills tri_table[a,b,c] (all 6 permutations) with the renumbered index for
 # triangles ≤ tmax that are compatible with esets[tmax].
 # Compaction helps tmap & esets fit into L1 cache. 
 
-function build_tri_table(n::Int,       # number of points 
-                         tmax ::Int,   # max triangle is first used in surface
-                         triangle_map     ::Vector{NTuple{3,Int}},
+function build_tri_table(n::Integer,       # number of points 
+                         tmax::Integer,   # max triangle is first used in surface
+                         triangle_map     ::Vector{TriIJK},
                          edgesets         ::Vector{Tri_Edgesets})
     @inbounds begin
         has_tmax = edgesets[tmax].has
@@ -103,18 +105,17 @@ function build_tri_table(n::Int,       # number of points
         tmap = triangle_map[keep]
         esets = edgesets[keep]
         tmax = length(esets)
-        esets[tmax] = Tri_Edgesets(has_tmax, has_tmax) # make tmax conflict with itself so it won't be used again
+        push!(esets, Tri_Edgesets(has_tmax, has_tmax)) # make sentinel at tmax+1
     end
 
     tri_table = Array{Int16,3}(undef, n, n, n)
-    fill!(tri_table, Int16(tmax)) # tmax is sentinel, too, because it conflictsts own edgeset
-    @inbounds for t in 1:tmax
+    fill!(tri_table, Int16(tmax+1)) # tmax+1 is sentinel conflicting edges of tmax
+    @inbounds for t::Int16 in 1:tmax
         a, b, c = tmap[t]
-        idx = Int16(t)
-        tri_table[a,b,c]=idx; tri_table[a,c,b]=idx
-        tri_table[b,a,c]=idx; tri_table[b,c,a]=idx
-        tri_table[c,a,b]=idx; tri_table[c,b,a]=idx
+        tri_table[a,b,c]=t; tri_table[a,c,b]=t
+        tri_table[b,a,c]=t; tri_table[b,c,a]=t
+        tri_table[c,a,b]=t; tri_table[c,b,a]=t
     end
 
-    return tmax, tmap, esets, tri_table
+    return Int16(tmax), tmap, esets, tri_table
 end

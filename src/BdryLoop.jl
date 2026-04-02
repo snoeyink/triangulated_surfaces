@@ -74,7 +74,7 @@ end
 # ── init_loop! (test version) ─────────────────────────────────────────────────
 # Uses triangle_index directly; leaves edgesets zeroed.
 # Call this form from tests and anywhere renumbering is not needed.
-function init_loop!(b::BdryLoop, i::Int, j::Int, k::Int)
+function init_loop!(b::BdryLoop, i::Integer, j::Integer, k::Integer)
     @assert i < j < k "init_loop!: need i < j < k"
     t = triangle_index(i, j, k)
     @inbounds begin
@@ -98,14 +98,14 @@ end
 # search loop. Use this form inside backtrack!.
 function init_loop!(b       ::BdryLoop,
                     t       ::Int16,
-                    tmap    ::Vector{NTuple{3,Int}},
+                    tmap    ::Vector{TriIJK},
                     edgesets::Vector{Tri_Edgesets})
     @inbounds begin
         fill!(b.status, UNUSED)
         i,j,k = tmap[t]
-        b.v[i] = BdryVE(Int8(j), Int8(k), t)
-        b.v[j] = BdryVE(Int8(k), Int8(i), t)
-        b.v[k] = BdryVE(Int8(i), Int8(j), t)
+        b.v[i] = BdryVE(j, k, t)
+        b.v[j] = BdryVE(k, i, t)
+        b.v[k] = BdryVE(i, j, t)
         b.status[i] = ON_BOUNDARY
         b.status[j] = ON_BOUNDARY
         b.status[k] = ON_BOUNDARY

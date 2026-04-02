@@ -41,28 +41,32 @@ function enumerate_triangulated_surfaces(points::Vector{Point3D})
     
     # Precompute conflict matrix and mappings
     triangle_map, edgesets = precompute_conflicts(points)
-     
+    
     # Initialize per-vertex triangle counters and compute `min_idx`:
     # scan triangles from highest to lowest index, counting how many times
     # each vertex appears; when all n vertices have count >= 3, record the
     # triangle index `min_idx` where the last vertex crossed the threshold.
     v_tri_cnt = zeros(Int, n)
     v3_count = 0
+    min_tri = 3n-6
+    max_tri = length(triangle_map)
     v_count_tri(v) = (v_tri_cnt[v] += 1) == 3 ? 1 : 0
-    @inbounds for i in 1:length(tri_map)
-        a, b, c = tri_map[i]
+    @inbounds for i in 1:max_tri
+        a, b, c = triangle_map[i]
         v3_count += v_count_tri(a)
         v3_count += v_count_tri(b) 
         v3_count += v_count_tri(c)
-        if v3_count == n
+        if v3_count == n # all vertices have count >= 3
             min_tri = i
             break
         end
     end
 
-    max_tri = triangle_index(n-2, n-1, n) # all triangles must be below this
-    for t in max_tri:-1:min_tri
+    for t::Int16 in max_tri:-1:min_tri
         tmax, tmap, esets, tri_table = build_tri_table(n, t, triangle_map, edgesets)
+        b = BdryLoop(n)
+        init_loop!(b, tmax, tmap, esets)
+        s = BdryStack()
         results = backtrack(tmax, tmap, esets, tri_table)
     return results
 end
