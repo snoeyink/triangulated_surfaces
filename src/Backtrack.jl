@@ -35,23 +35,23 @@ end
 
 # ear (i, j, k=nxt(i)): 2 new edges (i,j) and (j,k)
 @inline function ear_ok(b                ::BdryLoop,
-                         tri_table       ::Array{Int16,3},
+                         tri_table       ::AbstractArray{Int16,3},
                          edgesets::Vector{Tri_Edgesets},
-                         i::Int, j::Int) :: Bool
+                         i::Int, k::Int) :: Bool # old vertex i, unused k
     @inbounds begin
-        ti = tri_table[i, j, b.v[i].next]
+        ti = tri_table[i, k, nxt(b, i)]
         return isdisjoint(edgesets[ti].conf, b.added_edgeset) && isdisjoint(edgesets[ti].has, b.forbidden_edgeset)
     end
 end
 
 # link (i, j=nxt(i), k=nxt2(i)): 1 new edge (i,k)
 @inline function link_ok(b                ::BdryLoop,
-                         tri_table        ::Array{Int16,3},
+                         tri_table        ::AbstractArray{Int16,3},
                          edgesets::Vector{Tri_Edgesets},
                          i::Int) :: Bool
     @inbounds begin
-        j  = Int(b.v[i].next)
-        ti = tri_table[i, j, b.v[j].next]
+        j  = nxt(b, i)
+        ti = tri_table[i, j, nxt(b, j)]
         return isdisjoint(edgesets[ti].conf, b.added_edgeset) && isdisjoint(edgesets[ti].has, b.forbidden_edgeset)
     end
 end
@@ -66,7 +66,7 @@ end
         if removable(b, m) && b.v[m].tri < t
             return false
         end
-        m = Int(b.v[m].next)
+        m = nxt(b, m)
         m == b.head && break
     end
     return true
@@ -106,14 +106,14 @@ end
 # Pushes SearchFrame; resume_i/resume_k encode the next sibling at THIS level.
 function add_ear!(b                ::BdryLoop,
                   s                ::BdryStack{D},
-                  tri_table        ::Array{Int16,3},
+                  tri_table        ::AbstractArray{Int16,3},
                   edgesets::Vector{Tri_Edgesets},
                   i::Int, k::Int,
                   resume_i::Int8, resume_k::Int8) where {D}
     D && @assert on_boundary(b, i) "add_ear!: i not on boundary"
     D && @assert unused(b, k)      "add_ear!: k not unused"
     @inbounds begin
-        j = Int(b.v[i].next)
+        j = nxt(b, i)
         t = tri_table[i, j, k]
         D && @assert !iszero(Int(t)) "add_ear!: triangle not in tri_table"
 
@@ -143,15 +143,15 @@ end
 # v[j] preserved untouched (needed for undo). b.head updated if j was head.
 function add_link!(b                ::BdryLoop,
                    s                ::BdryStack{D},
-                   tri_table        ::Array{Int16,3},
+                   tri_table        ::AbstractArray{Int16,3},
                    edgesets::Vector{Tri_Edgesets},
                    i::Int,
                    resume_i::Int8, resume_k::Int8) where {D}
     D && @assert on_boundary(b, i)          "add_link!: i not on boundary"
     D && @assert on_boundary(b, nxt(b, i))  "add_link!: nxt(i) not on boundary"
     @inbounds begin
-        j = Int(b.v[i].next)
-        k = Int(b.v[j].next)
+        j = nxt(b, i)
+        k = nxt(b, j)
         t = tri_table[i, j, k]
         D && @assert !iszero(Int(t)) "add_link!: triangle not in tri_table"
 
@@ -188,11 +188,11 @@ function popBE!(b::BdryLoop, s::BdryStack{D}, i::Int) where {D}
         D && @assert Int(frame.vertex_i) == i "popBE!: wrong vertex"
 
         if ear0(b, i)
-            k = Int(b.v[i].next)
+            k = nxt(b, i)
             D && @assert on_boundary(b, k) "popBE!: ear0: k not on_boundary"
             b.status[k] = UNUSED
         else                               # link(i)
-            j = Int(b.v[i].opp)
+            j = opp(b, i)
             D && @assert interior(b, j)    "popBE!: link: j not interior"
             b.status[j] = ON_BOUNDARY
         end
@@ -227,7 +227,7 @@ end
 # TODO: implement after data structure tests pass
 function backtrack!(b  ::BdryLoop,
                     s  ::BdryStack{D},
-                    T  ::Array{Int16,3},
+                    T  ::AbstractArray{Int16,3},
                     es ::Vector{Tri_Edgesets},
                     out::IO) where {D}
     error("backtrack!: not yet implemented")

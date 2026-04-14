@@ -1,5 +1,6 @@
 module TriangulatedSurfaces
 using Random
+using StaticArrays
 using Base: @propagate_inbounds
 
 export Point3D, Triangle, Surface, 
@@ -8,6 +9,9 @@ export Point3D, Triangle, Surface,
     BitSet128
 
 const debugprint = true
+const MIN_VERTICES = 5
+const MAX_VERTICES = 16
+const N = 6
 
 
 include("BitSet128.jl")
@@ -37,7 +41,7 @@ Returns a vector of `Surface` instances satisfying:
 """
 function enumerate_triangulated_surfaces(points::Vector{Point3D})
     n = length(points)
-    !(4<= n <= 16) && throw(ArgumentError("Need 4<= n <= 16 points"))
+    !(MIN_VERTICES <= n <= MAX_VERTICES) && throw(ArgumentError("Need $(MIN_VERTICES)<= n <= $(MAX_VERTICES) points"))
     
     # Precompute conflict matrix and mappings
     triangle_map, edgesets = precompute_conflicts(points)
@@ -67,7 +71,7 @@ function enumerate_triangulated_surfaces(points::Vector{Point3D})
         b = BdryLoop(n)
         init_loop!(b, tmax, tmap, esets)
         s = BdryStack()
-        results = backtrack(tmax, tmap, esets, tri_table)
+        backtrack!(b, s, tri_table, esets, out)
     return results
 end
 end

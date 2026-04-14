@@ -30,7 +30,7 @@ end
 triangle_index(a::Integer, b::Integer, c::Integer) = a + (b-1)*(b-2) ÷ 2 + (c-1)*(c-2)*(c-3) ÷ 6 # 1 based
 
 @inline function edge_index(a::Integer, b::Integer)
-    @boundscheck (1 <= a < b <= 16) || throw(ArgumentError("edge endpoints must satisfy 1 <= a < b <= 16"))
+    @boundscheck (1 <= a < b <= MAX_VERTICES) || throw(ArgumentError("edge endpoints must satisfy 1 <= a < b <= $(MAX_VERTICES)"))
     return a + (b-1)*(b-2) ÷ 2 # 1 based
 end
 e_index(a::Integer, b::Integer) = @inbounds edge_index(minmax(a,b)...) 
@@ -90,10 +90,11 @@ end
 # triangles ≤ tmax that are compatible with esets[tmax].
 # Compaction helps tmap & esets fit into L1 cache. 
 
-function build_tri_table(n::Integer,       # number of points 
-                         tmax::Integer,   # max triangle is first used in surface
-                         triangle_map     ::Vector{TriIJK},
-                         edgesets         ::Vector{Tri_Edgesets})
+function build_tri_table(::Val{N},         # number of points at compile time
+                         tmax::Integer,    # max triangle is first used in surface
+                         triangle_map      ::Vector{TriIJK},
+                         edgesets          ::Vector{Tri_Edgesets}) where {N}
+    @boundscheck (MIN_VERTICES <= N <= MAX_VERTICES) || throw(ArgumentError("N must satisfy $(MIN_VERTICES) <= N <= $(MAX_VERTICES)"))
     @inbounds begin
         has_tmax = edgesets[tmax].has
         conf_tmax = edgesets[tmax].conf
@@ -108,7 +109,7 @@ function build_tri_table(n::Integer,       # number of points
         push!(esets, Tri_Edgesets(has_tmax, has_tmax)) # make sentinel at tmax+1
     end
 
-    tri_table = Array{Int16,3}(undef, n, n, n)
+    tri_table = MArray{Tuple{N,N,N}, Int16, 3, N * N * N}(undef)
     fill!(tri_table, Int16(tmax+1)) # tmax+1 is sentinel conflicting edges of tmax
     @inbounds for t::Int16 in 1:tmax
         a, b, c = tmap[t]
@@ -118,4 +119,20 @@ function build_tri_table(n::Integer,       # number of points
     end
 
     return Int16(tmax), tmap, esets, tri_table
+end
+
+@inline function build_tri_table(n::Integer,
+                                 tmax::Integer,
+                                 triangle_map::Vector{TriIJK},
+                                 edgesets::Vector{Tri_Edgesets})
+    n == 8  && return build_tri_table(Val(8),  tmax, triangle_map, edgesets)
+    n == 9  && return build_tri_table(Val(9),  tmax, triangle_map, edgesets)
+    n == 10 && return build_tri_table(Val(10), tmax, triangle_map, edgesets)
+    n == 11 && return build_tri_table(Val(11), tmax, triangle_map, edgesets)
+    n == 12 && return build_tri_table(Val(12), tmax, triangle_map, edgesets)
+    n == 13 && return build_tri_table(Val(13), tmax, triangle_map, edgesets)
+    n == 14 && return build_tri_table(Val(14), tmax, triangle_map, edgesets)
+    n == 15 && return build_tri_table(Val(15), tmax, triangle_map, edgesets)
+    n == 16 && return build_tri_table(Val(16), tmax, triangle_map, edgesets)
+    throw(ArgumentError("n must satisfy $(MIN_VERTICES) <= n <= $(MAX_VERTICES)"))
 end

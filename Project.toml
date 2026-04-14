@@ -1,4 +1,10 @@
 name = "TriangulatedSurfaces"
 uuid = "c1c2f4c3-0c01-4b6d-85af-6b4a0cbb0064"
-authors = ["Your Name"]
 version = "0.1.0"
+authors = ["Your Name"]
+
+[deps]
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[compat]
+StaticArrays = "1.9.18"
