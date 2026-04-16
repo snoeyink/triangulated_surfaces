@@ -19,7 +19,7 @@ end
     points = tetrahedron_with_origin(scale=4)
     push!(points, Point3D(2, 1, 0))
     tm,es = precompute_conflicts(points)
-    tmax, tmap, esets, tri_table = build_tri_table(Int8(6), Int16(length(es)), tm, es)
+    tmax, tmap, esets, tri_table = build_tri_table(UInt8(6), UInt16(length(es)), tm, es)
     #println(tmap)
     @test tmax == 16 # 16 triangles survive 
     @test tri_table[3, 4, 6] == tmax

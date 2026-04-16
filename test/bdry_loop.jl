@@ -33,13 +33,13 @@ const init_loop!   = TriangulatedSurfaces.init_loop!
 function make_six_vertex_loop()
     b = BdryLoop(16)
     @inbounds begin
-        b.v[1] = BdryVE(Int8(3), Int8(5), triangle_index(1,3,5))
-        b.v[3] = BdryVE(Int8(6), Int8(2), triangle_index(2,3,6))
-        b.v[6] = BdryVE(Int8(4), Int8(7), triangle_index(4,6,7))
-        b.v[4] = BdryVE(Int8(7), Int8(6), triangle_index(4,6,7))
-        b.v[7] = BdryVE(Int8(5), Int8(6), triangle_index(5,6,7))
-        b.v[5] = BdryVE(Int8(1), Int8(3), triangle_index(1,3,5))
-        b.v[2] = BdryVE(Int8(6), Int8(5), triangle_index(2,5,6))   # preserved interior state
+        b.v[1] = BdryVE(UInt8(3), UInt8(5), triangle_index(1,3,5))
+        b.v[3] = BdryVE(UInt8(6), UInt8(2), triangle_index(2,3,6))
+        b.v[6] = BdryVE(UInt8(4), UInt8(7), triangle_index(4,6,7))
+        b.v[4] = BdryVE(UInt8(7), UInt8(6), triangle_index(4,6,7))
+        b.v[7] = BdryVE(UInt8(5), UInt8(6), triangle_index(5,6,7))
+        b.v[5] = BdryVE(UInt8(1), UInt8(3), triangle_index(1,3,5))
+        b.v[2] = BdryVE(UInt8(6), UInt8(5), triangle_index(2,5,6))   # preserved interior state
         for i in (1,3,4,5,6,7); b.status[i] = ON_BOUNDARY; end
         b.status[2] = INTERIOR
     end
@@ -52,7 +52,7 @@ end
 # ─── layout ──────────────────────────────────────────────────────────────────
 @testset "BdryVE isbits and size" begin
     @test isbitstype(BdryVE)
-    @test sizeof(BdryVE) == 4           # Int8 + Int8 + Int16, no padding
+    @test sizeof(BdryVE) == 4           # UInt8 + UInt8 + UInt16, no padding
 end
 
 # ─── init_loop!(b, 1, 2, 3) ──────────────────────────────────────────────────

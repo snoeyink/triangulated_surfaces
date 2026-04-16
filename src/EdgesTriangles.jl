@@ -1,4 +1,4 @@
-TriIJK = NTuple{3,Int8}
+TriIJK = NTuple{3,UInt8}
 
 
 """
@@ -109,16 +109,16 @@ function build_tri_table(::Val{N},         # number of points at compile time
         push!(esets, Tri_Edgesets(has_tmax, has_tmax)) # make sentinel at tmax+1
     end
 
-    tri_table = MArray{Tuple{N,N,N}, Int16, 3, N * N * N}(undef)
-    fill!(tri_table, Int16(tmax+1)) # tmax+1 is sentinel conflicting edges of tmax
-    @inbounds for t::Int16 in 1:tmax
+    tri_table = MArray{Tuple{N,N,N}, UInt16, 3, N * N * N}(undef)
+    fill!(tri_table, UInt16(tmax+1)) # tmax+1 is sentinel conflicting edges of tmax
+    @inbounds for t::UInt16 in 1:tmax
         a, b, c = tmap[t]
         tri_table[a,b,c]=t; tri_table[a,c,b]=t
         tri_table[b,a,c]=t; tri_table[b,c,a]=t
         tri_table[c,a,b]=t; tri_table[c,b,a]=t
     end
 
-    return Int16(tmax), tmap, esets, tri_table
+    return UInt16(tmax), tmap, esets, tri_table
 end
 
 @inline function build_tri_table(n::Integer,

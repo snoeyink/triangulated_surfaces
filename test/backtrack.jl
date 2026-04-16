@@ -39,17 +39,17 @@ end
     points = tetrahedron_with_origin(scale=4)
     push!(points, Point3D(2, 1, 0))
     tm,es = precompute_conflicts(points)
-    tmax, tmap, esets, tri_table = build_tri_table(Int8(6), Int16(length(es)), tm, es)  # test tri_table and edgesets for add_ear!/add_link!
+    tmax, tmap, esets, tri_table = build_tri_table(UInt8(6), UInt16(length(es)), tm, es)  # test tri_table and edgesets for add_ear!/add_link!
     @test tmax == tri_table[3, 4, 6]
 
     b = BdryLoop(6); s = BdryStack()
-    init_loop!(b, Int16(tmax), tmap, esets)
+    init_loop!(b, UInt16(tmax), tmap, esets)
     @test nxt(b,3)==4 && opp(b,3)==6 && tri(b,3)==tmax
     @test nxt(b,4)==6 && opp(b,4)==3 && tri(b,4)==tmax
     @test nxt(b,6)==3 && opp(b,6)==4 && tri(b,6)==tmax
     @test nxt3(b,3) == 3  
                  # 3-vertex loop: nxt2(3)=6, nxt3(3)=3
-    @test 0 == @allocated add_ear!(b, s, tri_table, esets, 3, 1, Int8(0), Int8(0))
+    @test 0 == @allocated add_ear!(b, s, tri_table, esets, 3, 1, UInt8(0), UInt8(0))
     
     t = tri_table[3, 1, 4]
     @test nxt(b,3)==1  && opp(b,3)==4  && tri(b,3)==t

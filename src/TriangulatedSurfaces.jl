@@ -66,7 +66,7 @@ function enumerate_triangulated_surfaces(points::Vector{Point3D})
         end
     end
 
-    for t::Int16 in max_tri:-1:min_tri
+    for t::UInt16 in max_tri:-1:min_tri
         tmax, tmap, esets, tri_table = build_tri_table(n, t, triangle_map, edgesets)
         b = BdryLoop(n)
         init_loop!(b, tmax, tmap, esets)

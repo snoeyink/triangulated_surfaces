@@ -11,11 +11,11 @@ struct SearchFrame
     added_edgeset    ::BitSet128   # b.added_edgeset before the move
     forbidden_edgeset::BitSet128   # b.forbidden_edgeset before the move
     ve               ::BdryVE      # b.v[vertex_i] before the move
-    n_unused         ::Int8        # b.n_unused before the move
-    vertex_i         ::Int8        # boundary vertex modified (also serves as debug check)
-    resume_i         ::Int8        # 0 = level exhausted; else: resume from this vertex
-    resume_k         ::Int8        # 0 = try link at resume_i; k>0 = try ears from k
-    saved_head       ::Int8        # b.head before this move (restored by popBE!)
+    n_unused         ::UInt8        # b.n_unused before the move
+    vertex_i         ::UInt8        # boundary vertex modified (also serves as debug check)
+    resume_i         ::UInt8        # 0 = level exhausted; else: resume from this vertex
+    resume_k         ::UInt8        # 0 = try link at resume_i; k>0 = try ears from k
+    saved_head       ::UInt8        # b.head before this move (restored by popBE!)
 end
 
 # ── BdryStack ─────────────────────────────────────────────────────────────────
@@ -35,7 +35,7 @@ end
 
 # ear (i, j, k=nxt(i)): 2 new edges (i,j) and (j,k)
 @inline function ear_ok(b                ::BdryLoop,
-                         tri_table       ::AbstractArray{Int16,3},
+                         tri_table       ::AbstractArray{UInt16,3},
                          edgesets::Vector{Tri_Edgesets},
                          i::Int, k::Int) :: Bool # old vertex i, unused k
     @inbounds begin
@@ -46,7 +46,7 @@ end
 
 # link (i, j=nxt(i), k=nxt2(i)): 1 new edge (i,k)
 @inline function link_ok(b                ::BdryLoop,
-                         tri_table        ::AbstractArray{Int16,3},
+                         tri_table        ::AbstractArray{UInt16,3},
                          edgesets::Vector{Tri_Edgesets},
                          i::Int) :: Bool
     @inbounds begin
@@ -84,21 +84,21 @@ end
 end
 
 # After link(i): next sibling is ear(i, first_unused), or advance to nxt(i)
-@inline function resume_after_link(b::BdryLoop, i::Int) :: Tuple{Int8,Int8}
+@inline function resume_after_link(b::BdryLoop, i::Int) :: Tuple{UInt8,UInt8}
     k = first_unused(b)
-    k > 0 && return Int8(i), Int8(k)
+    k > 0 && return UInt8(i), UInt8(k)
     ni = nxt(b, i)
-    ni == b.head && return Int8(0), Int8(0)   # wrapped: level exhausted
-    return Int8(ni), Int8(0)
+    ni == b.head && return UInt8(0), UInt8(0)   # wrapped: level exhausted
+    return UInt8(ni), UInt8(0)
 end
 
 # After ear(i, k): next sibling is ear(i, k') or advance to nxt(i)
-@inline function resume_after_ear(b::BdryLoop, i::Int, k::Int) :: Tuple{Int8,Int8}
+@inline function resume_after_ear(b::BdryLoop, i::Int, k::Int) :: Tuple{UInt8,UInt8}
     k2 = next_unused_after(b, k)
-    k2 > 0 && return Int8(i), Int8(k2)
+    k2 > 0 && return UInt8(i), UInt8(k2)
     ni = nxt(b, i)
-    ni == b.head && return Int8(0), Int8(0)
-    return Int8(ni), Int8(0)
+    ni == b.head && return UInt8(0), UInt8(0)
+    return UInt8(ni), UInt8(0)
 end
 
 # ── add_ear! ──────────────────────────────────────────────────────────────────
@@ -106,10 +106,10 @@ end
 # Pushes SearchFrame; resume_i/resume_k encode the next sibling at THIS level.
 function add_ear!(b                ::BdryLoop,
                   s                ::BdryStack{D},
-                  tri_table        ::AbstractArray{Int16,3},
+                  tri_table        ::AbstractArray{UInt16,3},
                   edgesets::Vector{Tri_Edgesets},
                   i::Int, k::Int,
-                  resume_i::Int8, resume_k::Int8) where {D}
+                  resume_i::UInt8, resume_k::UInt8) where {D}
     D && @assert on_boundary(b, i) "add_ear!: i not on boundary"
     D && @assert unused(b, k)      "add_ear!: k not unused"
     @inbounds begin
@@ -121,13 +121,13 @@ function add_ear!(b                ::BdryLoop,
         s.sp += 1
         s.frames[s.sp] = SearchFrame(
             b.added_edgeset, b.forbidden_edgeset,
-            b.v[i], Int8(b.n_unused), Int8(i),
-            resume_i, resume_k, Int8(b.head),
+            b.v[i], UInt8(b.n_unused), UInt8(i),
+            resume_i, resume_k, UInt8(b.head),
         )
 
         # Topology
-        b.v[i]      = BdryVE(Int8(k), Int8(j), t)
-        b.v[k]      = BdryVE(Int8(j), Int8(i), t)
+        b.v[i]      = BdryVE(UInt8(k), UInt8(j), t)
+        b.v[k]      = BdryVE(UInt8(j), UInt8(i), t)
         b.status[k] = ON_BOUNDARY
         b.n_unused -= 1
 
@@ -143,10 +143,10 @@ end
 # v[j] preserved untouched (needed for undo). b.head updated if j was head.
 function add_link!(b                ::BdryLoop,
                    s                ::BdryStack{D},
-                   tri_table        ::AbstractArray{Int16,3},
+                   tri_table        ::AbstractArray{UInt16,3},
                    edgesets::Vector{Tri_Edgesets},
                    i::Int,
-                   resume_i::Int8, resume_k::Int8) where {D}
+                   resume_i::UInt8, resume_k::UInt8) where {D}
     D && @assert on_boundary(b, i)          "add_link!: i not on boundary"
     D && @assert on_boundary(b, nxt(b, i))  "add_link!: nxt(i) not on boundary"
     @inbounds begin
@@ -159,13 +159,13 @@ function add_link!(b                ::BdryLoop,
         s.sp += 1
         s.frames[s.sp] = SearchFrame(
             b.added_edgeset, b.forbidden_edgeset,
-            b.v[i], Int8(b.n_unused), Int8(i),
-            resume_i, resume_k, Int8(b.head),
+            b.v[i], UInt8(b.n_unused), UInt8(i),
+            resume_i, resume_k, UInt8(b.head),
         )
 
         # Topology: j becomes interior; v[j] preserved for undo
         b.status[j] = INTERIOR
-        b.v[i]      = BdryVE(Int8(k), Int8(j), t)
+        b.v[i]      = BdryVE(UInt8(k), UInt8(j), t)
 
         # Keep head on the boundary
         if j == b.head; b.head = k; end
@@ -224,11 +224,81 @@ end
 # Terminal: b.n_unused==0 && nxt3(b,head)==head → check last triangle → write
 # Backtrack: no advance → pop frame → restore → jump to (frame.resume_i, frame.resume_k)
 #
-# TODO: implement after data structure tests pass
-function backtrack!(b  ::BdryLoop,
-                    s  ::BdryStack{D},
-                    T  ::AbstractArray{Int16,3},
-                    es ::Vector{Tri_Edgesets},
-                    out::IO) where {D}
-    error("backtrack!: not yet implemented")
-end
+
+# grow the disk represented by the current boundary loop, 
+# whose min removable triangle is at half-edge head,
+# by adding in turn each triangle that will be the new head.
+# Backtrack if we've exhausted the valid triangles to add.
+function backtrack!(b::BdryLoop, head::UInt8, edge_info::EdgeSetvunused::BitSet16, ntri::UInt8, tmax::UInt16)
+    if ntri == 2N-5 # terminal: only one triangle to add, check and write if valid
+        t = ti(b,ei(b,head), nxt2(b,head)) # index of last triangle
+        if  isdisjoint(edgesets[t].conf, b.added_edgeset) && isdisjoint(edgesets[t].has, b.forbidden_edgeset)
+            # write out surface
+        end
+        return  # backtrack
+    end
+
+    # Walk around BdryLoop after head, and try to add ear triangles
+    i = nxt(b, head)
+    ear0(head) && i = nxt(b, i) # at the end of the loop we'll handle burying head edges
+    secondmin = tri(b,i)
+    t_head = tri(b, head)
+    while i != head
+        ei = ei(b, i)
+        ti = tri(b, i)
+        secondmin = min(secondmin, ti)
+        link(b, i) && update_min_removable(b, i, ti) # see if burying op would make this the min removable
+        
+        isempty(vunused(b)) && continue
+        for k in vunused(b)
+            if ti(b, ei, k) < t_head
+                # add_ear!(b, s, tri_table, edgesets, i, k, resume_i, resume_k)
+                # is_min_removable(b, i) ? backtrack!(...) : popBE!(b,s,i)
+            end
+        end
+        i = nxt(b, i)
+    end
+    # Now try burying head edges, which may be the min removable
+    if !isempty(vunused(b))
+        ei = ei(b, head)
+        if ear0(b, head)
+            for k in vunused(b)
+                t = ti(b, ei, k)
+                if t < secondmin && isdisjoint(edgesets[t].conf, b.added_edgeset) && isdisjoint(edgesets[t].has, b.forbidden_edgeset)
+                    # add_ear!(b, head) 
+                    backtrack!()
+                    # assert is_min_removable(b, head)
+                    # remove_ear!(b, head)
+                end
+            end
+            i = nxt(b, head)
+            assert ear1(b,i)
+            ei = ei(b, i)
+             for k in vunused(b)
+                t = ti(b, ei, k)
+                if t < secondmin && isdisjoint(edgesets[t].conf, b.added_edgeset) && isdisjoint(edgesets[t].has, b.forbidden_edgeset)
+                    # add_ear!(b, i)
+                    backtrack!()
+                    # assert is_min_removable(b, i)
+                    # remove_ear!(b, i)
+                end
+            end
+        else # link(head)
+            for k in vunused(b)
+                t = ti(b, ei, k)
+                if t < secondmin && isdisjoint(edgesets[t].conf, b.added_edgeset) && isdisjoint(edgesets[t].has, b.forbidden_edgeset)
+                    # add_ear(b, i)
+                    backtrack!()
+                    # assert is_min_removable(b, i)
+                    # remove_ear!(b, i)                end
+        end
+    end
+                limit = min(secondmin,vs(b,head))
+            for k in vunused(b)
+                t = ti(b, ei, k)
+                if t < limit && isdisjoint(edgesets[t].conf, b.added_edgeset) && isdisjoint(edgesets[t].has, b.forbidden_edgeset)
+                    # add_ear(b, i)
+                    backtrack!()
+                    # assert is_min_removable(b, i)
+                    # remove_ear!(b, i)                end
+        end

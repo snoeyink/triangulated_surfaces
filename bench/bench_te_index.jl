@@ -33,7 +33,7 @@ function test_int(inttype, n::Int)
 end
 
 function benchmark_te()
-    for t in (Int64, Int32, Int16, Int8, UInt64, UInt32, UInt16, UInt8)
+    for t in (Int64, Int32, UInt16, UInt8, UInt64, UInt32, UInt16, UInt8)
         println()
         println(t)
         @btime begin c,d = test_int($t, 5); sum(d) end
