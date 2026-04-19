@@ -136,3 +136,4 @@ end
     n == 16 && return build_tri_table(Val(16), tmax, triangle_map, edgesets)
     throw(ArgumentError("n must satisfy $(MIN_VERTICES) <= n <= $(MAX_VERTICES)"))
 end
+end
