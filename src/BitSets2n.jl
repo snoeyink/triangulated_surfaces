@@ -51,7 +51,7 @@ end
 Base.IteratorSize(::Type{<:BitSet}) = Base.HasLength()
 
 Base.eltype(::Type{<:BitSet{N}}) where {N} =
-    N ≤ 255 ? UInt8 : UInt16 % insurance in case we ever add BitSet{256} or larger
+    N ≤ 255 ? UInt8 : UInt16 # insurance in case we ever add BitSet{256} or larger
 
 @inline function Base.iterate(s::BitSet{N,T}, remaining::T = s.bits) where {N,T}
     iszero(remaining) && return nothing
