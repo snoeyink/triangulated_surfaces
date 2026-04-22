@@ -14,7 +14,7 @@ const MAX_VERTICES = 16
 const N = 6
 
 
-include("BitSet128.jl")
+include("BitSets128.jl")
 include("Points.jl")
 include("EdgesTriangles.jl")
 include("BdryLoop.jl")
