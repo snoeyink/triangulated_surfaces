@@ -4,7 +4,8 @@
 # Or via Pkg.test() if included in test/runtests.jl.
 
 using Test
-using BitSetsOriented128
+include("../src/BitSetsOriented128.jl")
+using .BitSetsOriented128
 
 # ── helper: reconstruct a BitSetOriented128 from collected positions ──────────
 function from_positions(iter)
