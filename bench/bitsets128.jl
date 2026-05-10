@@ -5,7 +5,7 @@ include(joinpath(@__DIR__, "..", "src", "BitSets2n.jl"))
 include(joinpath(@__DIR__, "..", "src", "BitSets128.jl"))
 
 const BS2 = BitSets2n
-const BS64 = BitSets128
+const BS64 = Main
 
 const N = 1024
 const SEED = 42
