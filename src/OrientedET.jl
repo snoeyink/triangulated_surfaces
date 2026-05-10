@@ -59,7 +59,7 @@ end
 Precompute conflicts:
 1. triangle_map: map from triangle numbers 1:P(n,3) to triples of vertex indices (c,d,e) with c<d<e
 2. edge_map: map from edge indices 1:P(n,2) to pairs of vertices
-3. EconflT: BitSet128s for edges triangle conflicts with. 
+3. EconflT: BitSetOriented128 for edges triangle conflicts with. 
 These are sorted by increasing conflicts 
 """
 function precompute_conflicts(points::Vector{Point3D})
@@ -100,16 +100,16 @@ function precompute_conflicts(points::Vector{Point3D})
         conflictcount[ei] = confl_count 
     end # for edge
 
-    EconflT = Vector{BitSet128}(undef, max_tri_idx) # conflicted edges for each triangle index
+    EconflT = Vector{BitSetOriented128}(undef, max_tri_idx) # conflicted edges for each triangle index
     
     # Stable sort preserves the (2k-1, 2k) pairing exactly!
     edge_indices = sortperm(1:max_edge_idx, by=i->conflictcount[i])
     ip = invperm(edge_indices)
     
     for t = 1:max_tri_idx
-        conf_edgeset = BitSet128()
+        conf_edgeset = BitSetOriented128()
         for i in edges_conflT[t]
-            conf_edgeset |= singleton(BitSet128, ip[i])
+            conf_edgeset |= singleton(BitSetOriented128, ip[i])
         end
         EconflT[t] = conf_edgeset
     end

@@ -240,7 +240,7 @@ function backtrack!(b::BdryLoop, head::UInt8, edge_info::EdgeSetvunused::BitSet1
 
     # Walk around BdryLoop after head, and try to add ear triangles
     i = nxt(b, head)
-    ear0(head) && i = nxt(b, i) # at the end of the loop we'll handle burying head edges
+    ear0(b,head) && i = nxt(b, i) # at the end of the loop we'll handle burying head edges
     secondmin = tri(b,i)
     t_head = tri(b, head)
     while i != head
