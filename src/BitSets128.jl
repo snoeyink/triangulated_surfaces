@@ -99,11 +99,10 @@ Base.iterate(::BitSet128, s::NTuple{2,UInt64}) = _next128(s[1], s[2])
 """
     BitSetOriented128
 
-Immutable oriented bitset over public values `1:255`.
+Immutable oriented bitset over public values `1:256`.
 - Forward values `1:128` are stored in `fwd` (as `fwd` element `i`).
 - Reverse values `129:256` are stored in `rev` (value `v` → `rev` element `v − 128`).
 
-Element 128 of `rev` (value 256) is representable but outside the intended range `1:255`.
 No automatic masking; iterators emit all set bits verbatim.
 """
 struct BitSetOriented128
