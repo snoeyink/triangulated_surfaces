@@ -23,23 +23,18 @@ end
 """
     edge_index(a::Integer, b::Integer)
     
-Returns a strictly 1-based index where paired oriented edges (a,b) and (b,a) 
-occupy adjacent indices: (1, 2), (3, 4), etc.
+Returns a strictly 1-based oriented index with orientation as the high block:
+- forward edges `(a,b)` with `a<b` map to `1:128`
+- reverse edges `(a,b)` with `a>b` map to `129:256`
+
+For a fixed undirected edge `{u,v}` with `u<v`, `(u,v)` and `(v,u)` share the
+same low-order index and differ by `+128`.
 """
 @inline function edge_index(a::Integer, b::Integer)
     @boundscheck (1 <= a <= N) && (1 <= b <= N) && (a ≠ b) ||
         throw(ArgumentError("edge endpoints must satisfy 1 <= a, b <= $(N)"))
-    return (a < b) ? 2*a + (b-1)*(b-2) - 1 : 2*b + (a-1)*(a-2)
+    return (a < b) ? a + ((b-1)*(b-2)) ÷ 2 : b + ((a-1)*(a-2)) ÷ 2 + 128
 end
-
-"""
-    rev_edge(idx::Integer)
-
-Zero-cost mapping from an edge index to its reverse edge index using XOR.
-"""
-@inline rev_edge(idx::Integer) = ((idx - 1) ⊻ 1) + 1
-
-singleton(a::Integer, b::Integer) = @inbounds singleton(edge_index(a,b))
 
 """
     triangle_index(a::Integer, b::Integer, c::Integer)
@@ -58,60 +53,58 @@ end
 
 Precompute conflicts:
 1. triangle_map: map from triangle numbers 1:P(n,3) to triples of vertex indices (c,d,e) with c<d<e
-2. edge_map: map from edge indices 1:P(n,2) to pairs of vertices
-3. EconflT: BitSetOriented128 for edges triangle conflicts with. 
-These are sorted by increasing conflicts 
+2. edge_map: map from oriented edge indices 1:(128 + P(n,2)) to pairs of vertices
+3. EconflT: BitSet128 for unoriented edges each triangle conflicts with
+
+No edge reindexing is applied.
 """
 function precompute_conflicts(points::Vector{Point3D})
     length(points) == N || throw(ArgumentError("points length must be equal to N=$(N)"))
-    max_edge_idx = edge_index(N, N - 1) # This naturally maxes out at N*(N-1)
-    max_tri_idx = triangle_index(N - 2, N, N - 1)
+    max_edge_idx = edge_index(N, N - 1) # max used index = 128 + binomial(N,2)
+    max_tri_idx = 0
+    for a in 1:N, b in 1:N, c in 1:N
+        (a == b || b == c || a == c) && continue
+        t = triangle_index(a, b, c)
+        t > max_tri_idx && (max_tri_idx = t)
+    end
 
     # Create reverse map: index -> triangle
-    triangle_map = Vector{TriIJK}(undef, max_tri_idx)
+    triangle_map = fill((UInt8(0), UInt8(0), UInt8(0)), max_tri_idx)
     edge_map = Vector{EdgeIJ}(undef, max_edge_idx)
     for a in 1:N, b in 1:N
         a == b && continue
         edge_map[edge_index(a,b)] = (a, b)
     end
 
-    for c in 1:(N-2), d in (c+1):(N-1)
-        for e in (d+1):N
-            t = triangle_index(c, d, e)
-            triangle_map[t] = (c, d, e)
-            triangle_map[t+N*(N-1)÷ 2] = (c, e, d)
-        end
+    for a in 1:N, b in 1:N, c in 1:N
+        (a == b || b == c || a == c) && continue
+        triangle_map[triangle_index(a, b, c)] = (a, b, c)
     end
     
     # Loop over triangles and edges to count conflicts and make edgesets
-    conflictcount = zeros(Int, max_edge_idx) 
     edges_conflT = [Set{Int}() for _ in 1:max_tri_idx]
     
     for a in 1:N, b in 1:N 
         a == b && continue
         ei = edge_index(a,b)
-        confl_count = 0
         for t in 1:max_tri_idx
+            triangle_map[t][1] == 0 && continue
             if conflict((a, b), triangle_map[t], points)
-                confl_count += 1
-                push!(edges_conflT[t], ei)
+                push!(edges_conflT[t], (ei <= 128 ? ei : ei - 128))
             end
         end # for triangle
-        conflictcount[ei] = confl_count 
     end # for edge
 
-    EconflT = Vector{BitSetOriented128}(undef, max_tri_idx) # conflicted edges for each triangle index
-    
-    # Stable sort preserves the (2k-1, 2k) pairing exactly!
-    edge_indices = sortperm(1:max_edge_idx, by=i->conflictcount[i])
-    ip = invperm(edge_indices)
+    EconflT = Vector{BitSet128}(undef, max_tri_idx) # conflicted unoriented edges for each triangle index
     
     for t = 1:max_tri_idx
-        conf_edgeset = BitSetOriented128()
+        conf_edgeset = BitSet128()
         for i in edges_conflT[t]
-            conf_edgeset |= singleton(BitSetOriented128, ip[i])
+            conf_edgeset |= singleton(BitSet128, i)
         end
         EconflT[t] = conf_edgeset
     end
-    return triangle_map, edge_map[edge_indices], EconflT 
+    return triangle_map, edge_map, EconflT 
 end
+
+@inline undirected_edge_index(e::Int) = e <= 128 ? e : e - 128
