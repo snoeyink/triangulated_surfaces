@@ -216,7 +216,9 @@ Base.:|(a::BitSetOriented128, r::Rev)      = a | _unrev(r)
 Base.:&(a::BitSetOriented128, r::Rev)      = a & _unrev(r)
 Base.xor(a::BitSetOriented128, r::Rev)     = xor(a, _unrev(r))
 Base.setdiff(a::BitSetOriented128, r::Rev) = setdiff(a, _unrev(r))
-
+Base.isdisjoint(a::BitSetOriented128, r::Rev) = isdisjoint(a, _unrev(r))
+Base.:(==)(a::BitSetOriented128, r::Rev)      = a == _unrev(r)
+Base.:(==)(r::Rev, a::BitSetOriented128)      = _unrev(r) == a
 #=
 
 
