@@ -12,7 +12,12 @@ function enumerate_triangulated_surfaces(points::Vector{Point3D})
     vlinks = [PackedUnionFind.PackedUF() for _ in 1:N]
     
     out = BitSetOriented128[]
-    count = Ref{Int64}(0)          
+    count = Ref{Int64}(0) 
+    
+    # Create plot
+    pl = create_plot(points)
+
+
 
     function backtrack!(::Val{NV}, has::BitSetOriented128, confl::BitSet128,
                         out::Vector{BitSetOriented128}, count::Base.RefValue{Int64}) where {NV}
@@ -57,6 +62,8 @@ function enumerate_triangulated_surfaces(points::Vector{Point3D})
             tindex = triangle_index(i, j, k)
             @inbounds (isdisjoint(econflT[tindex], has.fwd) && isdisjoint(econflT[tindex], has.rev)) || continue
             
+            # Add triangles
+            plot_tri(pl, i, j, k)
             @inbounds begin           
                 save_vi = vlinks[i]
                 save_vj = vlinks[j]
@@ -77,6 +84,7 @@ function enumerate_triangulated_surfaces(points::Vector{Point3D})
                 vlinks[k] = save_vk
                 nv_complete = save_nv_complete
                 confl = save_confl
+                plot_pop!(pl)
             end
         end
     end

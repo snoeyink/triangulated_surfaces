@@ -8,7 +8,8 @@ export Point3D, Triangle, Surface,
     has_colinear_triple, has_coplanar_quad,
     BitSet128, BitSetOriented128,
     precompute_conflicts, edge_index, ueindex, u_edge, triangle_index,
-    enumerate_triangulated_surfaces
+    enumerate_triangulated_surfaces,
+    run_demo
 
 const D = true # debug flag
 const MIN_VERTICES = 5
@@ -21,10 +22,14 @@ include("Points.jl")
 include("OrientedET.jl")
 include("PackedUnionFind.jl")
 include("Backtrack.jl")
+include("PlotTriSurf.jl")
 
+function run_demo()
+    points = tetrahedron_with_origin(scale=4)
+    push!(points, Point3D(2, 1, 0))
+    count, _ = enumerate_triangulated_surfaces(points)
+    print(count, " triangulated surfaces with vertices ", points, "\n")
+    return count
+end
 
-points = tetrahedron_with_origin(scale=4)
-push!(points, Point3D(2, 1, 0))
-count, surf = enumerate_triangulated_surfaces(points)
-print(count, " triangulated surfaces with vertices ", points, "\n")
 end # module

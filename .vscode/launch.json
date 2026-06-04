@@ -2,10 +2,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug TriangulatedSurfaces.jl",
+      "name": "Debug Demo",
       "type": "julia",
       "request": "launch",
-      "program": "${workspaceFolder}/src/TriangulatedSurfaces.jl",
+      "program": "${workspaceFolder}/scripts/run_demo.jl",
       "cwd": "${workspaceFolder}",
       "juliaEnv": "${workspaceFolder}",
       "stopOnEntry": false
