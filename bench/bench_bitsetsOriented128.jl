@@ -63,7 +63,7 @@ function to_sets_bs128(masks::Vector{Tuple{UInt128,UInt128}})::Vector{BS128.BitS
                 s |= BS128.singleton(BS128.BitSetOriented128, p)
             end
             if !iszero(hi & bit)
-                s |= BS128.singleton(BS128.BitSetOriented128, p + 128)
+                s |= BS128.singleton(BS128.BitSetOriented128, UInt8(p + 128))
             end
         end
         sets[i] = s

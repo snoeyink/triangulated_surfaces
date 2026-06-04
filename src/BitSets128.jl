@@ -18,12 +18,12 @@ struct BitSet128
 end
 
 BitSet128() = BitSet128((zero(UInt64), zero(UInt64)))
-Base.eltype(::Type{BitSet128})    = Int
+Base.eltype(::Type{BitSet128})    = UInt8
 Base.IteratorSize(::Type{BitSet128}) = Base.SizeUnknown()
 
 # ── internal 0-based helper (not exported) ────────────────────────────────────
 
-@inline function singleton0(::Type{BitSet128}, i::Int)
+@inline function singleton0(::Type{BitSet128}, i::Integer)
     mask = one(UInt64) << (i & 63)
     i < 64 ? BitSet128((mask, zero(UInt64))) : BitSet128((zero(UInt64), mask))
 end
@@ -31,14 +31,14 @@ end
 # ── public constructors ───────────────────────────────────────────────────────
 
 """    singleton(BitSet128, i) → BitSet128 with only public element `i ∈ 1:128` set."""
-@inline singleton(::Type{BitSet128}, i::Int) = singleton0(BitSet128, i - 1)
+@inline singleton(::Type{BitSet128}, i::Integer) = singleton0(BitSet128, i - 1)
 
 """
     valid_mask(BitSet128, n) → BitSet128 with elements `1:n` set.
 
 No masking is applied automatically elsewhere; call this explicitly when needed.
 """
-function valid_mask(::Type{BitSet128}, n::Int)
+function valid_mask(::Type{BitSet128}, n::Integer)
     n <= 0   && return BitSet128()
     n >= 128 && return BitSet128((typemax(UInt64), typemax(UInt64)))
     if n <= 64
@@ -62,7 +62,7 @@ Base.isempty(a::BitSet128)                  = iszero(a.words[1] | a.words[2])
 Base.isdisjoint(a::BitSet128, b::BitSet128) = isempty(a & b)
 Base.issubset(a::BitSet128, b::BitSet128)   = isempty(setdiff(a, b))
 
-function Base.in(i::Int, a::BitSet128)
+function Base.in(i::Integer, a::BitSet128)
     i0 = i - 1
     (i0 < 0 || i0 > 127) && return false
     @inbounds !iszero((a.words[(i0 >> 6) + 1] >> (i0 & 63)) & one(UInt64))
@@ -71,8 +71,8 @@ end
 # ── minimum — returns 0 on empty (documented deviation from Base contract) ────
 
 function Base.minimum(a::BitSet128)
-    w1 = a.words[1];  !iszero(w1) && return trailing_zeros(w1) + 1
-    w2 = a.words[2];  !iszero(w2) && return trailing_zeros(w2) + 65
+    w1 = a.words[1];  !iszero(w1) && return UInt8(trailing_zeros(w1) + 1)
+    w2 = a.words[2];  !iszero(w2) && return UInt8(trailing_zeros(w2) + 65)
     0
 end
 
@@ -81,10 +81,10 @@ end
 @inline function _next128(w1::UInt64, w2::UInt64)
     if !iszero(w1)
         bit = trailing_zeros(w1)
-        return (bit + 1,  (w1 & (w1 - one(UInt64)), w2))
+        return (UInt8(bit + 1),  (w1 & (w1 - one(UInt64)), w2))
     elseif !iszero(w2)
         bit = trailing_zeros(w2)
-        return (bit + 65, (zero(UInt64), w2 & (w2 - one(UInt64))))
+        return (UInt8(bit + 65), (zero(UInt64), w2 & (w2 - one(UInt64))))
     else
         return nothing
     end
@@ -111,20 +111,20 @@ struct BitSetOriented128
 end
 
 BitSetOriented128() = BitSetOriented128(BitSet128(), BitSet128())
-Base.eltype(::Type{BitSetOriented128})    = Int
+Base.eltype(::Type{BitSetOriented128})    = UInt8
 Base.IteratorSize(::Type{BitSetOriented128}) = Base.SizeUnknown()
 
 # ── public constructors ───────────────────────────────────────────────────────
 
 """    singleton(BitSetOriented128, i) → oriented singleton at value `i`."""
-function singleton(::Type{BitSetOriented128}, i::Int)
+function singleton(::Type{BitSetOriented128}, i::Integer)
     i <= 128 ?
         BitSetOriented128(singleton(BitSet128, i), BitSet128()) :
-        BitSetOriented128(BitSet128(), singleton(BitSet128, i - 128))
+        BitSetOriented128(BitSet128(), singleton(BitSet128, i - UInt8(128)))
 end
 
 """    valid_mask(BitSetOriented128, n) → low-order `n` bits set in both `fwd` and `rev`."""
-function valid_mask(::Type{BitSetOriented128}, n::Int)
+function valid_mask(::Type{BitSetOriented128}, n::Integer)
     m = valid_mask(BitSet128, n)
     BitSetOriented128(m, m)
 end
@@ -142,9 +142,9 @@ Base.isempty(a::BitSetOriented128)                          = isempty(a.fwd) && 
 Base.isdisjoint(a::BitSetOriented128, b::BitSetOriented128) = isempty(a & b)
 Base.issubset(a::BitSetOriented128, b::BitSetOriented128)   = isempty(setdiff(a, b))
 
-function Base.in(i::Int, a::BitSetOriented128)
+function Base.in(i::Integer, a::BitSetOriented128)
     1   <= i <= 128 && return (i       in a.fwd)
-    129 <= i <= 256 && return ((i-128) in a.rev)
+    129 <= i <= 256 && return ((i-UInt8(128)) in a.rev)
     false
 end
 
@@ -152,8 +152,7 @@ end
 
 function Base.minimum(a::BitSetOriented128)
     m = minimum(a.fwd);  !iszero(m) && return m
-    m = minimum(a.rev);  !iszero(m) && return m + 128
-    0
+    m = minimum(a.rev);  !iszero(m) && return m + UInt8(128)
 end
 
 # ── iteration ─────────────────────────────────────────────────────────────────
@@ -167,16 +166,16 @@ end
 @inline function _next_oriented(fw1::UInt64, fw2::UInt64, rw1::UInt64, rw2::UInt64)
     if !iszero(fw1)
         bit = trailing_zeros(fw1)
-        return (bit + 1,   (fw1 & (fw1 - one(UInt64)), fw2, rw1, rw2))
+        return (UInt8(bit + 1),   (fw1 & (fw1 - one(UInt64)), fw2, rw1, rw2))
     elseif !iszero(fw2)
         bit = trailing_zeros(fw2)
-        return (bit + 65,  (zero(UInt64), fw2 & (fw2 - one(UInt64)), rw1, rw2))
+        return (UInt8(bit + 65),  (zero(UInt64), fw2 & (fw2 - one(UInt64)), rw1, rw2))
     elseif !iszero(rw1)
         bit = trailing_zeros(rw1)
-        return (bit + 129, (zero(UInt64), zero(UInt64), rw1 & (rw1 - one(UInt64)), rw2))
+        return (UInt8(bit + 129), (zero(UInt64), zero(UInt64), rw1 & (rw1 - one(UInt64)), rw2))
     elseif !iszero(rw2)
         bit = trailing_zeros(rw2)
-        return (bit + 193, (zero(UInt64), zero(UInt64), zero(UInt64), rw2 & (rw2 - one(UInt64))))
+        return (UInt8(bit + 193), (zero(UInt64), zero(UInt64), zero(UInt64), rw2 & (rw2 - one(UInt64))))
     else
         return nothing
     end

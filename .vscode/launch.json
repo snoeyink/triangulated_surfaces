@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug TriangulatedSurfaces.jl",
+      "type": "julia",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/TriangulatedSurfaces.jl",
+      "cwd": "${workspaceFolder}",
+      "juliaEnv": "${workspaceFolder}",
+      "stopOnEntry": false
+    }
+  ]
+}

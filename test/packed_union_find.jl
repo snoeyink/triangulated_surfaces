@@ -66,4 +66,31 @@ const PUF = TriangulatedSurfaces.PackedUnionFind
 
         @test r1 == r2 == r3 == r4
     end
+
+    @testset "single_component predicate" begin
+        uf0 = PUF.PackedUF()
+
+        # All-singleton state vacuously satisfies the predicate.
+        @test PUF.single_component(uf0, 1)
+
+        # One non-singleton component {1,2,3}; all others singleton.
+        uf1, ok1 = PUF.union_sets(uf0, 1, 2)
+        uf2, ok2 = PUF.union_sets(uf1, 2, 3)
+        @test ok1 && ok2
+
+        @test PUF.single_component(uf2, 1)
+        @test PUF.single_component(uf2, 2)
+        @test PUF.single_component(uf2, 3)
+
+        # Choosing c from a singleton should fail when another non-singleton exists.
+        @test !PUF.single_component(uf2, 4)
+
+        # Two non-singleton components: {1,2} and {4,5}.
+        ufa, oka = PUF.union_sets(uf0, 1, 2)
+        ufb, okb = PUF.union_sets(ufa, 4, 5)
+        @test oka && okb
+
+        @test !PUF.single_component(ufb, 1)
+        @test !PUF.single_component(ufb, 4)
+    end
 end

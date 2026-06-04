@@ -2,7 +2,25 @@ const singleton = TriangulatedSurfaces.singleton
 const precompute_conflicts = TriangulatedSurfaces.precompute_conflicts
 const triangle_index = TriangulatedSurfaces.triangle_index
 const edge_index = TriangulatedSurfaces.edge_index
+const ueindex = TriangulatedSurfaces.ueindex
+const u_edge = TriangulatedSurfaces.u_edge
+const usesV = TriangulatedSurfaces.usesV
 const BitSet128 = TriangulatedSurfaces.BitSet128
+
+@testset "TriangulatedSurfaces usesV" begin
+    @test length(usesV) == TriangulatedSurfaces.N
+
+    for i in 1:TriangulatedSurfaces.N
+        expected = BitSet128()
+        for j in 1:(i - 1)
+            expected |= singleton(BitSet128, edge_index(j, i))
+        end
+        for k in (i + 1):TriangulatedSurfaces.N
+            expected |= singleton(BitSet128, edge_index(i, k))
+        end
+        @test usesV[i] == expected
+    end
+end
 
 @testset "TriangulatedSurfaces indices and conflicts" begin
     points = tetrahedron_with_origin(scale=4)
@@ -18,6 +36,9 @@ const BitSet128 = TriangulatedSurfaces.BitSet128
 
     for a in 1:length(points), b in (a + 1):length(points)
         @test edge_index(b, a) == edge_index(a, b) + 128
+        @test u_edge(edge_index(b,a)) == edge_index(a, b)
+        @test ueindex(b,a) == edge_index(a, b)
+        @test ueindex(a,b) == edge_index(a, b)
     end
 
     for a in 1:length(points), b in 1:length(points), c in 1:length(points)
@@ -35,11 +56,11 @@ const BitSet128 = TriangulatedSurfaces.BitSet128
     @test triangle_index(tm[t346]...) == t346
 
 
-    @test tm[t125] == (1, 2, 5)
-    @test tm[t346] == (3, 4, 6)
+    @test tm[t125] == UInt8.((1, 2, 5))
+    @test tm[t346] == UInt8.((3, 4, 6))
 
-    expected_125 = singleton(BitSet128, edge_index(4, 6))
-    expected_346 = singleton(BitSet128, edge_index(1, 5))
+    expected_125 = singleton(BitSet128, ueindex(4, 6))
+    expected_346 = singleton(BitSet128, ueindex(1, 5))
     expected_union = expected_125 | expected_346
 
     @test econfl[t125] == expected_125
