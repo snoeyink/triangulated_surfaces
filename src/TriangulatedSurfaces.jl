@@ -16,20 +16,11 @@ const MIN_VERTICES = 5
 const MAX_VERTICES = 16
 const N = 6
 
-
 include("BitSets128.jl")
 include("Points.jl")
 include("OrientedET.jl")
+include("PlotTriSurf.jl")
 include("PackedUnionFind.jl")
 include("Backtrack.jl")
-include("PlotTriSurf.jl")
-
-function run_demo()
-    points = tetrahedron_with_origin(scale=4)
-    push!(points, Point3D(2, 1, 0))
-    count, _ = enumerate_triangulated_surfaces(points)
-    print(count, " triangulated surfaces with vertices ", points, "\n")
-    return count
-end
 
 end # module

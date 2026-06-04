@@ -1,5 +1,6 @@
 using GLMakie
-GLMakie.activate!(inline=true)
+GLMakie.activate!()
+
 const ueindex = TriangulatedSurfaces.ueindex
 
 # Plot state structure

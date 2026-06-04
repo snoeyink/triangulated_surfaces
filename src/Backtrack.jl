@@ -142,3 +142,11 @@ function enumerate_triangulated_surfaces(points::Vector{Point3D})
 
     return count[], out
 end
+
+function run_demo()
+    points = tetrahedron_with_origin(scale=4)
+    push!(points, Point3D(2, 1, 0))
+    count, _ = enumerate_triangulated_surfaces(points)
+    print(count, " triangulated surfaces with vertices ", points, "\n")
+    return count
+end
